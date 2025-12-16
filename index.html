@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üniversite Not Hesaplayıcı</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Üniversite Not Analiz & Hesaplama</h1>
+
+        <!-- TOP PANEL: AYARLAR -->
+        <div class="panel settings-panel">
+            <div class="settings-grid">
+                <div class="input-group">
+                    <label>Vize Etkisi (%)</label>
+                    <input type="number" id="vizeRatio" value="40" min="0" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Final Etkisi (%)</label>
+                    <input type="number" id="finalRatio" value="60" min="0" max="100">
+                </div>
+                <div class="input-group">
+                    <label>Geçme Notu</label>
+                    <input type="number" id="passGrade" value="50">
+                </div>
+                <div class="input-group">
+                    <label>Şartlı Geçme</label>
+                    <input type="number" id="condGrade" value="40">
+                </div>
+                <div class="input-group">
+                    <label>Final Barajı</label>
+                    <input type="number" value="35" readonly style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROL BAR -->
+        <div class="controls">
+            <button id="addCourseBtn" class="primary-btn">+ Ders Ekle</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="openObsModalBtn">OBS İçe Aktar</button>
+                <button id="resetBtn" class="danger-btn">Sıfırla</button>
+            </div>
+        </div>
+
+        <!-- MIDDLE PANEL: DERS TABLOSU -->
+        <div class="panel courses-panel">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 30%;">Ders Adı</th>
+                            <th>Kredi</th>
+                            <th>Vize</th>
+                            <th>Final</th>
+                            <th style="width: 25%;">Analiz / Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courseTableBody">
+                        <!-- Javascript ile doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyState" style="text-align: center; padding: 20px; color: var(--text-muted); display: none;">
+                Listede hiç ders yok. Lütfen ders ekleyin.
+            </div>
+        </div>
+
+        <!-- BOTTOM PANEL: ÖZET -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">Dönem Ortalaması</div>
+                <div class="summary-value" id="termAvg">0.00</div>
+                <div style="font-size: 12px; color: #888;">(100'lük Sistem)</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">GNO (GPA)</div>
+                <div class="summary-value" id="gpaValue">0.00</div>
+                <div style="font-size: 12px; color: #888;">(4.00'lük Sistem)</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Toplam Kredi</div>
+                <div class="summary-value" id="totalCredit">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OBS MODAL -->
+    <div class="modal" id="obsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>OBS Tablosunu Yapıştır</h3>
+                <button onclick="closeModal()"
+                    style="border:none; background:none; color:white; font-size:1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #aaa;">
+                    OBS sisteminden kopyaladığınız ders tablosunu (Ctrl+A, Ctrl+C) aşağıdaki alana yapıştırın (Ctrl+V).
+                </p>
+                <textarea id="obsInput" placeholder="OBS verisini buraya yapıştır..."></textarea>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button onclick="closeModal()">İptal</button>
+                    <button onclick="parseOBS()" class="primary-btn">Tabloyu Dönüştür</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
