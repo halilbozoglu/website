@@ -136,26 +136,67 @@ function calculateStatus(vize, final, credit, settings) {
     if (hasVize && !hasFinal) {
         result.statusText = 'Final Bekleniyor';
 
-        // Calculate Needed Finals
-        const neededForPass = (settings.passGrade - (v * vRatio)) / fRatio;
-        const neededForCond = (settings.condGrade - (v * vRatio)) / fRatio;
+        let html = `<div style="font-size:11px; line-height:1.4; text-align:left;">`;
+        let possibleCount = 0;
 
-        // Apply Threshold Rule
-        const targetPass = Math.max(Math.ceil(neededForPass), FINAL_THRESHOLD);
-        const targetCond = Math.max(Math.ceil(neededForCond), FINAL_THRESHOLD);
+        // Iterate through all letter grades (except FF)
+        LETTER_GRADES.forEach(g => {
+            if (g.label === 'FF') return; // Skip FF
 
-        let html = `<div style="font-size:11px; line-height:1.4;">`;
+            // Calculate needed Final
+            // Formül: (Hedef - (Vize * VRatio)) / FRatio
+            const needed = (g.min - (v * vRatio)) / fRatio;
 
-        // Can pass?
-        if (targetPass > 100) {
-            html += `<span style="color:var(--error)">Normal Geçiş İmkansız</span>`;
-        } else {
-            html += `<span style="color:var(--success)">${targetPass}</span> (Geçme)<br>`;
-        }
+            // Check threshold logic: Even if needed is low, must meet threshold to get grade?
+            // Usually threshold applies to passing. Let's assume you need at least threshold.
+            let target = Math.max(Math.ceil(needed), FINAL_THRESHOLD);
 
-        // Can cond?
-        if (targetCond <= 100 && targetCond < targetPass) {
-            html += `<span style="color:var(--warning)">${targetCond}</span> (Şartlı)`;
+            if (target <= 100) {
+                possibleCount++;
+
+                // Determine styling based on User Settings
+                let style = '';
+                let extra = '';
+
+                // Check matches with settings
+                // Note: We use range checks or exact match? 
+                // Settings are usually "min average".
+                // If g.min matchesPassGrade, or is the first grade >= PassGrade
+
+                // Let's just highlight based on ranges
+                if (g.min >= settings.passGrade && (g.min < settings.passGrade + 5 || g.min === settings.passGrade)) {
+                    // This logic is tricky if passGrade is weird. 
+                    // Let's just check if this specific letter IS the passing boundary.
+                    // Simplest: If g.min == settings.passGrade (approx)
+                }
+
+                // Better approach: Tag the lines
+                if (g.min === settings.passGrade) {
+                    style = 'color:var(--success); font-weight:700;';
+                    extra = ' (Geçme)';
+                } else if (g.min === settings.condGrade) {
+                    style = 'color:var(--warning); font-weight:700;';
+                    extra = ' (Şartlı)';
+                } else if (g.min > settings.passGrade) {
+                    // Above pass
+                    style = 'color:var(--text-main);';
+                } else if (g.min > settings.condGrade) {
+                    // Between cond and pass
+                    style = 'color:var(--warning);';
+                } else {
+                    // Below cond (but not FF, e.g. DD if cond is 40 and DD is 35)
+                    style = 'color:var(--error);';
+                }
+
+                html += `<div style="display:flex; justify-content:space-between; ${style}">
+                            <span>${g.label} (${g.min}):</span>
+                            <span><b>${target}</b>${extra}</span>
+                         </div>`;
+            }
+        });
+
+        if (possibleCount === 0) {
+            html += `<span style="color:var(--error)">Geçmek için yeterli puan imkansız.</span>`;
         }
 
         html += `</div>`;
