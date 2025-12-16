@@ -1,19 +1,18 @@
 /** 
  * Constants & Config 
  */
-const LETTER_GRADES = [
-    { min: 82, label: 'AA', coeff: 4.00 },
-    { min: 74, label: 'BA', coeff: 3.50 },
-    { min: 65, label: 'BB', coeff: 3.00 },
-    { min: 58, label: 'CB', coeff: 2.50 },
-    { min: 50, label: 'CC', coeff: 2.00 },
-    { min: 40, label: 'DC', coeff: 1.50 },
-    { min: 35, label: 'DD', coeff: 1.00 },
-    { min: 25, label: 'FD', coeff: 0.50 },
-    { min: 0, label: 'FF', coeff: 0.00 }
+const GRADE_SCALE = [
+    { min: 82, max: 100, coeff: 4.00, letter: 'AA' },
+    { min: 74, max: 81, coeff: 3.50, letter: 'BA' },
+    { min: 65, max: 73, coeff: 3.00, letter: 'BB' },
+    { min: 58, max: 64, coeff: 2.50, letter: 'CB' },
+    { min: 50, max: 57, coeff: 2.00, letter: 'CC' },
+    { min: 40, max: 49, coeff: 1.50, letter: 'DC' },
+    { min: 35, max: 39, coeff: 1.00, letter: 'DD' },
+    { min: 25, max: 34, coeff: 0.50, letter: 'FD' },
+    { min: 0, max: 24, coeff: 0.00, letter: 'FF' }
 ];
-
-const FINAL_THRESHOLD = 35; // Sabit Final Barajı
+const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
 
 // Default State
 let state = {
@@ -33,13 +32,11 @@ function init() {
     const saved = localStorage.getItem('gradeCalcData_v1');
     if (saved) {
         try {
-            const parsed = JSON.parse(saved);
-            state = parsed;
+            state = JSON.parse(saved);
         } catch (e) {
             console.error("Save data mismatch", e);
         }
     } else {
-        // Add one default empty row if fresh start
         addCourse(false);
     }
 
@@ -54,7 +51,12 @@ function init() {
 
 function saveState() {
     localStorage.setItem('gradeCalcData_v1', JSON.stringify(state));
-    render(); // Re-render for updates
+    const saveMsg = document.getElementById('saveMsg');
+    if (saveMsg) {
+        saveMsg.style.opacity = '1';
+        setTimeout(() => saveMsg.style.opacity = '0', 1000);
+    }
+    render();
 }
 
 /**
@@ -72,7 +74,7 @@ function addCourse(save = true) {
     state.courses.push({
         id: Date.now(),
         name: '',
-        credit: 3,
+        credit: '',
         vize: '',
         final: ''
     });
@@ -80,10 +82,8 @@ function addCourse(save = true) {
 }
 
 function removeCourse(id) {
-    if (confirm('Bu dersi silmek istediğinize emin misiniz?')) {
-        state.courses = state.courses.filter(c => c.id !== id);
-        saveState();
-    }
+    state.courses = state.courses.filter(c => c.id !== id);
+    saveState();
 }
 
 function clearAll() {
@@ -98,149 +98,121 @@ function updateCourseData(id, field, value) {
     const course = state.courses.find(c => c.id === id);
     if (course) {
         course[field] = value;
-        saveState();
+        // Don't save on every keystroke to avoid UI lag/jumps, but for this scale it's fine.
+        // Actually, render() rebuilds DOM which kills focus. We must NOT CALL saveState() -> render() on input!
+        // We should just update state and update the result cell specifically, OR 
+        // rely on a smarter render. 
+        // Since we are doing a simple app, let's update state but ONLY save, NOT render unless valid.
+        // Wait, if we don't render, the analysis column won't update.
+        // The reference file updates everything on 'input'.
+        // To avoid focus loss, we can construct the table once and only update values?
+        // OR: We can just use the reference file's approach: READ from DOM -> Calculate -> Write to DOM.
+        // But I want to keep the state-based approach if possible.
+        // Problem: Re-rendering the whole table destroys the input element you are typing in, losing focus.
+
+        // HYBRID APPROACH: Update the specific row's result cell immediately without full re-render.
+        // But for simplicity, let's update the specific DOM result + save state silently.
+
+        // Recalculate just this row's analysis
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) {
+            const analysis = calculateStatus(course.vize, course.final, course.credit, state.settings);
+            const resultCell = row.querySelector('.result-cell');
+            if (resultCell) resultCell.innerHTML = analysis;
+
+            // Also update summary
+            updateSummary();
+        }
+
+        // Save silently (debounce could be better but this is fine)
+        localStorage.setItem('gradeCalcData_v1', JSON.stringify(state));
     }
 }
 
 /**
  * Calculation Logic
  */
-function getLetterGrade(score) {
+function getCoefficient(score) {
     const rounded = Math.round(score);
-    for (let g of LETTER_GRADES) {
-        if (rounded >= g.min) return g;
-    }
-    return LETTER_GRADES[LETTER_GRADES.length - 1]; // FF
+    return GRADE_SCALE.find(g => rounded >= g.min && rounded <= g.max) || { coeff: 0.00, letter: 'FF' };
 }
 
+function formatNeeded(s) { return s <= 0 ? "OK" : (s > 100 ? ">100" : Math.ceil(s)); }
+
 function calculateStatus(vize, final, credit, settings) {
-    const vRatio = settings.vizeRatio / 100;
+    const mRatio = settings.vizeRatio / 100;
     const fRatio = settings.finalRatio / 100;
+    const pLimit = settings.passGrade;
+    const cLimit = settings.condGrade;
 
-    let result = {
-        avg: null,
-        letter: '?',
-        coeff: 0.00,
-        statusColor: 'status-neutral',
-        statusText: '-',
-        analysisHtml: ''
-    };
+    let rowHtml = "";
 
-    const hasVize = vize !== '' && vize !== null;
-    const hasFinal = final !== '' && final !== null;
+    // Normalize inputs
+    const v = vize === "" ? NaN : parseFloat(vize);
+    const f = final === "" ? NaN : parseFloat(final);
 
-    const v = parseFloat(vize) || 0;
-    const f = parseFloat(final) || 0;
+    if (!isNaN(v)) {
+        if (isNaN(f)) {
+            // Hedef Modu (Target Mode)
+            const currentPoints = v * mRatio;
+            const neededForPass = (pLimit - currentPoints) / fRatio;
+            const neededForCond = (cLimit - currentPoints) / fRatio;
 
-    // SCENARIO 1: Only Vize (Analysis Mode)
-    if (hasVize && !hasFinal) {
-        result.statusText = 'Final Bekleniyor';
+            rowHtml += `<div>Normal: <span class="${neededForPass > 100 ? 'status-fail' : 'status-pass'}">${formatNeeded(neededForPass)}</span> | Şartlı: <span class="${neededForCond > 100 ? 'status-fail' : 'status-cond'}">${formatNeeded(neededForCond)}</span></div>`;
 
-        let html = `<div style="font-size:11px; line-height:1.4; text-align:left;">`;
-        let possibleCount = 0;
-
-        // Iterate through all letter grades (except FF)
-        LETTER_GRADES.forEach(g => {
-            if (g.label === 'FF') return; // Skip FF
-
-            // Calculate needed Final
-            // Formül: (Hedef - (Vize * VRatio)) / FRatio
-            const needed = (g.min - (v * vRatio)) / fRatio;
-
-            // Check threshold logic: Even if needed is low, must meet threshold to get grade?
-            // Usually threshold applies to passing. Let's assume you need at least threshold.
-            let target = Math.max(Math.ceil(needed), FINAL_THRESHOLD);
-
-            if (target <= 100) {
-                possibleCount++;
-
-                // Determine styling based on User Settings
-                let style = '';
-                let extra = '';
-
-                // Check matches with settings
-                // Note: We use range checks or exact match? 
-                // Settings are usually "min average".
-                // If g.min matchesPassGrade, or is the first grade >= PassGrade
-
-                // Let's just highlight based on ranges
-                if (g.min >= settings.passGrade && (g.min < settings.passGrade + 5 || g.min === settings.passGrade)) {
-                    // This logic is tricky if passGrade is weird. 
-                    // Let's just check if this specific letter IS the passing boundary.
-                    // Simplest: If g.min == settings.passGrade (approx)
+            let targetsHtml = "";
+            TARGET_LETTERS.forEach(letter => {
+                const g = GRADE_SCALE.find(gr => gr.letter === letter);
+                if (g) {
+                    let req = Math.ceil((g.min - currentPoints) / fRatio);
+                    if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${letter}</span><span>${req < 0 ? 0 : req}</span></div>`;
                 }
-
-                // Better approach: Tag the lines
-                if (g.min === settings.passGrade) {
-                    style = 'color:var(--success); font-weight:700;';
-                    extra = ' (Geçme)';
-                } else if (g.min === settings.condGrade) {
-                    style = 'color:var(--warning); font-weight:700;';
-                    extra = ' (Şartlı)';
-                } else if (g.min > settings.passGrade) {
-                    // Above pass
-                    style = 'color:var(--text-main);';
-                } else if (g.min > settings.condGrade) {
-                    // Between cond and pass
-                    style = 'color:var(--warning);';
-                } else {
-                    // Below cond (but not FF, e.g. DD if cond is 40 and DD is 35)
-                    style = 'color:var(--error);';
-                }
-
-                html += `<div style="display:flex; justify-content:space-between; ${style}">
-                            <span>${g.label} (${g.min}):</span>
-                            <span><b>${target}</b>${extra}</span>
-                         </div>`;
-            }
-        });
-
-        if (possibleCount === 0) {
-            html += `<span style="color:var(--error)">Geçmek için yeterli puan imkansız.</span>`;
-        }
-
-        html += `</div>`;
-        result.analysisHtml = html;
-        return result;
-    }
-
-    // SCENARIO 2: Vize + Final (Result Mode)
-    if (hasVize && hasFinal) {
-        const average = (v * vRatio) + (f * fRatio);
-        result.avg = average.toFixed(2); // Keep precision for now
-
-        // 1. Check Final Threshold
-        if (f < FINAL_THRESHOLD) {
-            result.letter = 'FF';
-            result.coeff = 0.00;
-            result.statusText = 'KALDI (Baraj)';
-            result.statusColor = 'status-fail';
-            result.analysisHtml = `<span style="color:var(--error)">Final ${FINAL_THRESHOLD}'in altında</span>`;
-            return result;
-        }
-
-        // 2. Normal Scale
-        const gradeInfo = getLetterGrade(average);
-        result.letter = gradeInfo.label;
-        result.coeff = gradeInfo.coeff;
-
-        // 3. Status Check based on Average vs Goals
-        if (Math.round(average) >= settings.passGrade) { // CC and up usually
-            result.statusText = 'GEÇTİ';
-            result.statusColor = 'status-pass';
-        } else if (Math.round(average) >= settings.condGrade) {
-            result.statusText = 'ŞARTLI';
-            result.statusColor = 'status-cond';
+            });
+            if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
         } else {
-            result.statusText = 'KALDI';
-            result.statusColor = 'status-fail';
+            // Durum Modu (Result Mode)
+            let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
+            let status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
+            const gInfo = getCoefficient(avg);
+
+            rowHtml = `<div style="font-weight:bold; font-size:1.1rem">Ort: ${avg}</div><div class="${status[1]}">${status[0]} (${gInfo.letter})</div>`;
         }
-
-        result.analysisHtml = `Ort: <b>${result.avg}</b> <span class="status-badge ${result.statusColor}">${result.letter}</span>`;
-        return result;
+    } else {
+        rowHtml = "<span style='color:#666'>...</span>";
     }
+    return rowHtml;
+}
 
-    return result;
+function updateSummary() {
+    let totalWeightedPoints100 = 0;
+    let totalWeightedPoints4 = 0;
+    let gradedCredits = 0;
+    let registeredCredits = 0;
+
+    state.courses.forEach(c => {
+        const credit = parseFloat(c.credit) || 0;
+        const v = c.vize === "" ? NaN : parseFloat(c.vize);
+        const f = c.final === "" ? NaN : parseFloat(c.final);
+
+        if (credit > 0) registeredCredits += credit;
+
+        if (!isNaN(v) && !isNaN(f)) {
+            const mRatio = state.settings.vizeRatio / 100;
+            const fRatio = state.settings.finalRatio / 100;
+            let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
+            const gInfo = getCoefficient(avg);
+
+            if (credit > 0) {
+                totalWeightedPoints100 += (avg * credit);
+                totalWeightedPoints4 += (gInfo.coeff * credit);
+                gradedCredits += credit;
+            }
+        }
+    });
+
+    document.getElementById('termAvg').innerText = gradedCredits > 0 ? (totalWeightedPoints100 / gradedCredits).toFixed(2) : "0.00";
+    document.getElementById('gpaValue').innerText = gradedCredits > 0 ? (totalWeightedPoints4 / gradedCredits).toFixed(2) : "0.00";
+    document.getElementById('totalCredit').innerText = registeredCredits;
 }
 
 /**
@@ -250,63 +222,51 @@ function parseOBS() {
     const text = document.getElementById('obsInput').value;
     if (!text.trim()) return;
 
-    // 1. Normalize spaces
-    const normalized = text.replace(/\t/g, ' ').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ');
+    try {
+        const normalized = text.replace(/\s+/g, ' ');
+        const regex = /(\d{7}).*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\d{7}|$)/g;
 
-    // 2. Regex
-    // Pattern: Code(7digit) ... Year(20xx) ... Name ... Credit ... Rest
-    const regex = /(\d{7}).*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\d{7}|$)/g;
+        let match;
+        let newCourses = [];
 
-    let match;
-    let count = 0;
-    let newCourses = [];
+        while ((match = regex.exec(normalized)) !== null) {
+            const courseName = match[3].trim();
+            const courseCredit = match[4];
+            const restOfBlock = match[5];
 
-    while ((match = regex.exec(normalized)) !== null) {
-        const courseName = match[3].trim(); // Name
-        const credit = parseInt(match[4]); // Credit
-        const rest = match[5].trim(); // The part after credit
+            let vize = "";
+            let final = "";
 
-        // Try to find grades in the 'rest' string
-        // Looking for identifying numbers. Assuming first number 0-100 is Vize.
-        // OBS formats vary, but often it's "Code Year Name Credit Grade"
-        // We use a simple regex to find the first independent number
-        let vizeVal = '';
-
-        // Matches a number that is not part of a larger word
-        // We ignore things that look like dates or IDs if possible, but simplest is 
-        // just finding the first 1-3 digit number.
-        const gradeMatch = rest.match(/\b(\d{1,3})\b/);
-        if (gradeMatch) {
-            const val = parseInt(gradeMatch[1]);
-            if (val >= 0 && val <= 100) {
-                vizeVal = val;
+            const vizeMatch = restOfBlock.match(/Vize\s+(\d+)/i);
+            if (vizeMatch) vize = vizeMatch[1];
+            else {
+                // Fallback: finding the first 1-3 digit number like previous logic if exact pattern fails
+                const gradeMatch = restOfBlock.match(/\b(\d{1,3})\b/);
+                if (gradeMatch && parseInt(gradeMatch[1]) <= 100) vize = gradeMatch[1];
             }
+
+            const finalMatch = restOfBlock.match(/Final\s+(\d+)/i);
+            if (finalMatch) final = finalMatch[1];
+
+            newCourses.push({
+                id: Date.now() + Math.random(),
+                name: courseName,
+                credit: courseCredit,
+                vize: vize,
+                final: final
+            });
         }
 
-        newCourses.push({
-            id: Date.now() + count,
-            name: courseName,
-            credit: isNaN(credit) ? 3 : credit,
-            vize: vizeVal,
-            final: ''
-        });
-        count++;
-    }
-
-    if (count > 0) {
-        // Keep existing or replace? Usually append is safer or clear empty.
-        // Let's remove the default empty row if it exists and is pristine
-        if (state.courses.length === 1 && state.courses[0].name === '') {
-            state.courses = [];
+        if (newCourses.length > 0) {
+            state.courses = [...state.courses, ...newCourses];
+            saveState(); // Will trigger render
+            closeModal();
+        } else {
+            alert("Veri bulunamadı. OBS tablonuzun formatı farklı olabilir.");
         }
-        state.courses = [...state.courses, ...newCourses];
-        saveState();
-        closeModal();
-        alert(`${count} ders başarıyla eklendi!`);
-    } else {
-        alert('Uygun formatta veri bulunamadı. Lütfen OBS tablosunu doğru kopyaladığınızdan emin olun.');
+    } catch (error) {
+        alert("Hata: " + error.message);
     }
-    document.getElementById('obsInput').value = '';
 }
 
 /**
@@ -316,77 +276,29 @@ function render() {
     const tbody = document.getElementById('courseTableBody');
     tbody.innerHTML = '';
 
-    let totalCredit = 0;
-    let weightedScoreSum = 0;
-    let weightedGPASum = 0;
-    let enteredCreditSum = 0; // Credits of courses with grades
-    let enteredCreditSumForGPA = 0; // Credits of courses with full grades
-
-    if (state.courses.length === 0) {
-        document.getElementById('emptyState').style.display = 'block';
-    } else {
-        document.getElementById('emptyState').style.display = 'none';
-    }
-
-    state.courses.forEach((course, index) => {
-        const analysis = calculateStatus(course.vize, course.final, course.credit, state.settings);
-        const cr = parseFloat(course.credit) || 0;
-        totalCredit += cr;
-
-        if (analysis.avg !== null) {
-            // Course is fully entered
-            const avgVal = parseFloat(analysis.avg);
-            weightedScoreSum += avgVal * cr;
-            weightedGPASum += analysis.coeff * cr;
-            enteredCreditSum += cr;
-            enteredCreditSumForGPA += cr;
-        }
-
+    state.courses.forEach((course) => {
+        const analysisHtml = calculateStatus(course.vize, course.final, course.credit, state.settings);
         const row = document.createElement('tr');
+        row.setAttribute('data-id', course.id);
+
         row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>
-            <input type="text" class="course-name-input" value="${course.name}" 
-                   placeholder="Ders Adı" 
-                   onchange="updateCourseData(${course.id}, 'name', this.value)">
-        </td>
-        <td>
-            <input type="number" class="credit-input" value="${course.credit}" min="0"
-                   onchange="updateCourseData(${course.id}, 'credit', this.value)">
-        </td>
-        <td>
-            <input type="number" class="grade-input" value="${course.vize}" placeholder="-" min="0" max="100"
-                   oninput="updateCourseData(${course.id}, 'vize', this.value)">
-        </td>
-        <td>
-            <input type="number" class="grade-input" value="${course.final}" placeholder="-" min="0" max="100"
-                   oninput="updateCourseData(${course.id}, 'final', this.value)">
-        </td>
-        <td>
-            <span style="font-size:13px;">${analysis.statusText}</span>
-            <div class="analysis-text">${analysis.analysisHtml}</div>
-        </td>
-        <td>
-            <button class="danger-btn" onclick="removeCourse(${course.id})" style="padding: 4px 8px; font-size:12px;">Sil</button>
-        </td>
-    `;
+            <td><input type="text" value="${course.name}" placeholder="Ders..." oninput="updateCourseData(${course.id}, 'name', this.value)"></td>
+            <td><input type="number" value="${course.credit}" placeholder="Kr" oninput="updateCourseData(${course.id}, 'credit', this.value)"></td>
+            <td><input type="number" value="${course.vize}" placeholder="Vize" oninput="updateCourseData(${course.id}, 'vize', this.value)"></td>
+            <td><input type="number" value="${course.final}" placeholder="Final" oninput="updateCourseData(${course.id}, 'final', this.value)"></td>
+            <td class="result-cell">${analysisHtml}</td>
+            <td><button class="btn btn-remove" onclick="removeCourse(${course.id})">Sil</button></td>
+        `;
         tbody.appendChild(row);
     });
 
-    // Update Footer Summary
-    document.getElementById('totalCredit').textContent = totalCredit;
-
-    const termAvg = enteredCreditSum > 0 ? (weightedScoreSum / enteredCreditSum).toFixed(2) : '0.00';
-    document.getElementById('termAvg').textContent = termAvg;
-
-    const gpa = enteredCreditSumForGPA > 0 ? (weightedGPASum / enteredCreditSumForGPA).toFixed(2) : '0.00';
-    document.getElementById('gpaValue').textContent = gpa;
+    updateSummary();
 }
 
 /* Modal Utils */
 const modal = document.getElementById('obsModal');
 document.getElementById('openObsModalBtn').onclick = () => modal.classList.add('active');
-function closeModal() { modal.classList.remove('active'); }
+function closeModal() { modal.classList.remove('active'); document.getElementById('obsInput').value = ''; }
 
 // Global Event Listeners for Settings
 ['vizeRatio', 'finalRatio', 'passGrade', 'condGrade'].forEach(id => {
@@ -396,5 +308,5 @@ function closeModal() { modal.classList.remove('active'); }
 document.getElementById('addCourseBtn').addEventListener('click', () => addCourse());
 document.getElementById('resetBtn').addEventListener('click', clearAll);
 
-// Initial Start
+// Init
 init();

@@ -4,111 +4,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Üniversite Not Hesaplayıcı</title>
+    <title>Mühendislik Not Hesaplayıcı (V10 - Final)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
     <div class="container">
-        <h1>Üniversite Not Analiz & Hesaplama</h1>
+        <header class="settings-panel">
+            <div class="save-indicator" id="saveMsg">Otomatik Kaydedildi ✓</div>
+            <div class="input-group">
+                <label>Vize Etki Oranı (%)</label>
+                <input type="number" id="vizeRatio" value="40" min="0" max="100">
+            </div>
+            <div class="input-group">
+                <label>Final Etki Oranı (%)</label>
+                <input type="number" id="finalRatio" value="60" min="0" max="100">
+            </div>
+            <div class="input-group">
+                <label>Normal Geçme Notu</label>
+                <input type="number" id="passGrade" value="50">
+            </div>
+            <div class="input-group">
+                <label>Şartlı Geçme Notu</label>
+                <input type="number" id="condGrade" value="40">
+            </div>
+        </header>
 
-        <!-- TOP PANEL: AYARLAR -->
-        <div class="panel settings-panel">
-            <div class="settings-grid">
-                <div class="input-group">
-                    <label>Vize Etkisi (%)</label>
-                    <input type="number" id="vizeRatio" value="40" min="0" max="100">
-                </div>
-                <div class="input-group">
-                    <label>Final Etkisi (%)</label>
-                    <input type="number" id="finalRatio" value="60" min="0" max="100">
-                </div>
-                <div class="input-group">
-                    <label>Geçme Notu</label>
-                    <input type="number" id="passGrade" value="50">
-                </div>
-                <div class="input-group">
-                    <label>Şartlı Geçme</label>
-                    <input type="number" id="condGrade" value="40">
-                </div>
-                <div class="input-group">
-                    <label>Final Barajı</label>
-                    <input type="number" value="35" readonly style="opacity: 0.7; cursor: not-allowed;">
-                </div>
+        <div class="table-container">
+            <table id="gradeTable">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Ders Adı</th>
+                        <th style="width: 8%;">Kredi</th>
+                        <th style="width: 8%;">Vize</th>
+                        <th style="width: 8%;">Final</th>
+                        <th style="width: 46%;">Durum / Detaylı Hedef Analizi</th>
+                        <th style="width: 10%;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="courseTableBody">
+                    <!-- Javascript ile doldurulacak -->
+                </tbody>
+            </table>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-add" id="addCourseBtn">+ Ders Ekle</button>
+                <button class="btn btn-import" id="openObsModalBtn">OBS'den Yapıştır (Tüm Metni)</button>
+                <button class="btn btn-clear" id="resetBtn">Tümünü Sıfırla</button>
             </div>
         </div>
 
-        <!-- CONTROL BAR -->
-        <div class="controls">
-            <button id="addCourseBtn" class="primary-btn">+ Ders Ekle</button>
-            <div style="display: flex; gap: 10px;">
-                <button id="openObsModalBtn">OBS İçe Aktar</button>
-                <button id="resetBtn" class="danger-btn">Sıfırla</button>
-            </div>
-        </div>
-
-        <!-- MIDDLE PANEL: DERS TABLOSU -->
-        <div class="panel courses-panel">
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">#</th>
-                            <th style="width: 30%;">Ders Adı</th>
-                            <th>Kredi</th>
-                            <th>Vize</th>
-                            <th>Final</th>
-                            <th style="width: 25%;">Analiz / Durum</th>
-                            <th>İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody id="courseTableBody">
-                        <!-- Javascript ile doldurulacak -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="emptyState" style="text-align: center; padding: 20px; color: var(--text-muted); display: none;">
-                Listede hiç ders yok. Lütfen ders ekleyin.
-            </div>
-        </div>
-
-        <!-- BOTTOM PANEL: ÖZET -->
-        <div class="summary-grid">
+        <div class="summary-panel">
             <div class="summary-card">
-                <div class="summary-label">Dönem Ortalaması</div>
+                <h3>Dönem Ortalaması (100'lük)</h3>
                 <div class="summary-value" id="termAvg">0.00</div>
-                <div style="font-size: 12px; color: #888;">(100'lük Sistem)</div>
             </div>
             <div class="summary-card">
-                <div class="summary-label">GNO (GPA)</div>
+                <h3>Genel Akademik Ort. (4.00)</h3>
                 <div class="summary-value" id="gpaValue">0.00</div>
-                <div style="font-size: 12px; color: #888;">(4.00'lük Sistem)</div>
             </div>
             <div class="summary-card">
-                <div class="summary-label">Toplam Kredi</div>
+                <h3>Toplam Kredi</h3>
                 <div class="summary-value" id="totalCredit">0</div>
             </div>
         </div>
     </div>
 
-    <!-- OBS MODAL -->
-    <div class="modal" id="obsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>OBS Tablosunu Yapıştır</h3>
-                <button onclick="closeModal()"
-                    style="border:none; background:none; color:white; font-size:1.5rem;">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #aaa;">
-                    OBS sisteminden kopyaladığınız ders tablosunu (Ctrl+A, Ctrl+C) aşağıdaki alana yapıştırın (Ctrl+V).
-                </p>
-                <textarea id="obsInput" placeholder="OBS verisini buraya yapıştır..."></textarea>
-                <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                    <button onclick="closeModal()">İptal</button>
-                    <button onclick="parseOBS()" class="primary-btn">Tabloyu Dönüştür</button>
-                </div>
+    <div class="modal-overlay" id="obsModal">
+        <div class="modal">
+            <h2>Veri İçe Aktar</h2>
+            <p class="modal-info">
+                OBS sayfasını açın, tüm metni seçin (Ctrl+A), kopyalayın (Ctrl+C) ve buraya yapıştırın.
+            </p>
+            <textarea id="obsInput" placeholder="Ctrl+V ile yapıştırın..."></textarea>
+            <div style="text-align: right;">
+                <button class="btn btn-clear" onclick="closeModal()">İptal</button>
+                <button class="btn btn-add" onclick="parseOBS()">Verileri İşle</button>
             </div>
         </div>
     </div>

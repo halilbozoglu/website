@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mühendislik Not Hesaplayıcı (V10 - Final)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --input-bg: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #bb86fc;
+            --success: #03dac6;
+            --warning: #ffb74d;
+            --danger: #cf6679;
+            --border: #333;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* --- Settings --- */
+        .settings-panel {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .save-indicator {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 0.75rem; color: var(--success);
+            opacity: 0; transition: opacity 0.5s;
+        }
+
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+        .input-group input {
+            background-color: var(--input-bg); border: 1px solid var(--border);
+            color: var(--text-main); padding: 12px; border-radius: 8px; font-size: 1rem;
+        }
+        .input-group input:focus { outline: none; border-color: var(--accent); }
+
+        /* --- Table --- */
+        .table-container {
+            background-color: var(--card-bg); border-radius: 12px;
+            padding: 20px; overflow-x: auto; border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { text-align: left; padding: 15px; color: var(--accent); border-bottom: 2px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        td input {
+            width: 100%; background-color: var(--input-bg);
+            border: 1px solid transparent; color: white; padding: 10px; border-radius: 6px;
+        }
+        td input:focus { border-color: var(--accent); outline: none; }
+
+        /* --- Results --- */
+        .result-cell { font-size: 0.9rem; line-height: 1.5; }
+        .status-pass { color: var(--success); font-weight: bold; }
+        .status-cond { color: var(--warning); font-weight: bold; }
+        .status-fail { color: var(--danger); font-weight: bold; }
+        
+        .target-container { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+        .target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .target-item { background-color: #252525; padding: 4px; border-radius: 4px; text-align: center; font-size: 0.8rem; border: 1px solid #333; }
+        .t-lbl { color: var(--accent); font-weight: 700; margin-right: 3px; }
+
+        /* --- Buttons --- */
+        .btn { cursor: pointer; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.8; }
+        .btn-add { background-color: var(--accent); color: #000; margin-top: 15px; }
+        .btn-remove { background-color: var(--danger); color: white; padding: 8px 12px; font-size: 0.8rem; }
+        .btn-clear { background-color: #444; color: #ccc; margin-left: 10px; }
+        .btn-import { background-color: var(--success); color: #000; margin-left: 10px; }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal {
+            background: var(--card-bg); padding: 25px; border-radius: 12px;
+            width: 90%; max-width: 600px; border: 1px solid var(--border);
+        }
+        .modal h2 { margin-bottom: 15px; color: var(--accent); }
+        .modal textarea {
+            width: 100%; height: 200px; background: var(--input-bg);
+            color: var(--text-main); border: 1px solid var(--border);
+            padding: 10px; border-radius: 8px; resize: vertical; margin-bottom: 15px;
+        }
+        .modal-info { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
+
+        /* --- Summary --- */
+        .summary-panel { margin-top: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .summary-card { background: linear-gradient(145deg, var(--card-bg), #252530); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .summary-value { font-size: 2rem; font-weight: bold; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="settings-panel">
+        <div class="save-indicator" id="saveMsg">Otomatik Kaydedildi ✓</div>
+        <div class="input-group">
+            <label>Vize Etki Oranı (%)</label>
+            <input type="number" id="midtermRatio" value="40" min="0" max="100">
+        </div>
+        <div class="input-group">
+            <label>Final Etki Oranı (%)</label>
+            <input type="number" id="finalRatio" value="60" min="0" max="100">
+        </div>
+        <div class="input-group">
+            <label>Normal Geçme Notu</label>
+            <input type="number" id="passLimit" value="50">
+        </div>
+        <div class="input-group">
+            <label>Şartlı Geçme Notu</label>
+            <input type="number" id="condLimit" value="40">
+        </div>
+    </header>
+
+    <div class="table-container">
+        <table id="gradeTable">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Ders Adı</th>
+                    <th style="width: 8%;">Kredi</th>
+                    <th style="width: 8%;">Vize</th>
+                    <th style="width: 8%;">Final</th>
+                    <th style="width: 46%;">Durum / Detaylı Hedef Analizi</th>
+                    <th style="width: 10%;">İşlem</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div style="margin-top: 15px;">
+            <button class="btn btn-add" onclick="addNewRow()">+ Ders Ekle</button>
+            <button class="btn btn-import" onclick="openModal()">OBS'den Yapıştır (Tüm Metni)</button>
+            <button class="btn btn-clear" onclick="clearAllData()">Tümünü Sıfırla</button>
+        </div>
+    </div>
+
+    <div class="summary-panel">
+        <div class="summary-card"><h3>Dönem Ortalaması (100'lük)</h3><div class="summary-value" id="avg100">0.00</div></div>
+        <div class="summary-card"><h3>Genel Akademik Ort. (4.00)</h3><div class="summary-value" id="gpa4">0.00</div></div>
+        <div class="summary-card"><h3>Toplam Kredi</h3><div class="summary-value" id="totalCredits">0</div></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+    <div class="modal">
+        <h2>Veri İçe Aktar</h2>
+        <p class="modal-info">
+            OBS sayfasını açın, tüm metni seçin (Ctrl+A), kopyalayın (Ctrl+C) ve buraya yapıştırın.
+        </p>
+        <textarea id="pasteArea" placeholder="Ctrl+V ile yapıştırın..."></textarea>
+        <div style="text-align: right;">
+            <button class="btn btn-clear" onclick="closeModal()">İptal</button>
+            <button class="btn btn-add" onclick="processPaste()">Verileri İşle</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Constants ---
+    const GRADE_SCALE = [
+        { min: 82, max: 100, coeff: 4.00, letter: 'AA' },
+        { min: 74, max: 81,  coeff: 3.50, letter: 'BA' },
+        { min: 65, max: 73,  coeff: 3.00, letter: 'BB' },
+        { min: 58, max: 64,  coeff: 2.50, letter: 'CB' },
+        { min: 50, max: 57,  coeff: 2.00, letter: 'CC' },
+        { min: 40, max: 49,  coeff: 1.50, letter: 'DC' },
+        { min: 35, max: 39,  coeff: 1.00, letter: 'DD' },
+        { min: 25, max: 34,  coeff: 0.50, letter: 'FD' },
+        { min: 0,  max: 24,  coeff: 0.00, letter: 'FF' }
+    ];
+    const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
+
+    // --- Elements ---
+    const midtermInput = document.getElementById('midtermRatio');
+    const finalInput = document.getElementById('finalRatio');
+    const passLimitInput = document.getElementById('passLimit');
+    const condLimitInput = document.getElementById('condLimit');
+    const tableBody = document.querySelector('#gradeTable tbody');
+    const saveMsg = document.getElementById('saveMsg');
+    const modal = document.getElementById('importModal');
+    const pasteArea = document.getElementById('pasteArea');
+
+    // --- Calculation Logic ---
+    function calculateAll(shouldSave = true) {
+        const rows = tableBody.querySelectorAll('tr');
+        const mRatio = parseFloat(midtermInput.value) / 100;
+        const fRatio = parseFloat(finalInput.value) / 100;
+        const pLimit = parseFloat(passLimitInput.value) || 0;
+        const cLimit = parseFloat(condLimitInput.value) || 0;
+
+        let totalWeightedPoints100 = 0; 
+        let totalWeightedPoints4 = 0; 
+        let gradedCredits = 0; // Sadece notu olan derslerin kredisi (Ortalama için)
+        let registeredCredits = 0; // Notu olsun olmasın tüm girilen krediler (Toplam Kredi için)
+
+        rows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const credit = parseFloat(inputs[1].value) || 0;
+            const vize = parseFloat(inputs[2].value);
+            const final = parseFloat(inputs[3].value);
+            const resultCell = row.querySelector('.result-cell');
+
+            let rowHtml = "";
+
+            // 1. Kredi Hesaplama (Notlardan bağımsız)
+            if (credit > 0) {
+                registeredCredits += credit;
+            }
+
+            if (!isNaN(vize)) {
+                if (isNaN(final)) { 
+                    // Hedef Modu
+                    const currentPoints = vize * mRatio;
+                    const neededForPass = (pLimit - currentPoints) / fRatio;
+                    const neededForCond = (cLimit - currentPoints) / fRatio;
+
+                    rowHtml += `<div>Normal: <span class="${neededForPass > 100 ? 'status-fail' : 'status-pass'}">${formatNeeded(neededForPass)}</span> | Şartlı: <span class="${neededForCond > 100 ? 'status-fail' : 'status-cond'}">${formatNeeded(neededForCond)}</span></div>`;
+                    
+                    let targetsHtml = "";
+                    TARGET_LETTERS.forEach(letter => {
+                        const g = GRADE_SCALE.find(gr => gr.letter === letter);
+                        if (g) {
+                            let req = Math.ceil((g.min - currentPoints) / fRatio);
+                            if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${letter}</span><span>${req < 0 ? 0 : req}</span></div>`;
+                        }
+                    });
+                    if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
+                } else { 
+                    // Durum Modu (Not Var)
+                    let avg = parseFloat(((vize * mRatio) + (final * fRatio)).toFixed(2));
+                    let status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
+                    const gInfo = getCoefficient(avg);
+                    
+                    rowHtml = `<div style="font-weight:bold; font-size:1.1rem">Ort: ${avg}</div><div class="${status[1]}">${status[0]} (${gInfo.letter})</div>`;
+
+                    // Ortalama için sadece notu olanları topla
+                    if (credit > 0) {
+                        totalWeightedPoints100 += (avg * credit);
+                        totalWeightedPoints4 += (gInfo.coeff * credit);
+                        gradedCredits += credit;
+                    }
+                }
+            } else { rowHtml = "<span style='color:#666'>...</span>"; }
+            resultCell.innerHTML = rowHtml;
+        });
+
+        // İstatistikleri Güncelle
+        // Ortalamayı 'gradedCredits'e böleriz, Toplam Krediyi 'registeredCredits' gösteririz
+        updateSummary(totalWeightedPoints100, totalWeightedPoints4, gradedCredits, registeredCredits);
+        
+        if(shouldSave) saveData();
+    }
+
+    function getCoefficient(score) {
+        const rounded = Math.round(score);
+        return GRADE_SCALE.find(g => rounded >= g.min && rounded <= g.max) || { coeff: 0.00, letter: 'FF' };
+    }
+    
+    function formatNeeded(s) { return s <= 0 ? "OK" : (s > 100 ? ">100" : Math.ceil(s)); }
+
+    function updateSummary(sum100, sum4, gCredits, rCredits) {
+        document.getElementById('avg100').innerText = gCredits > 0 ? (sum100 / gCredits).toFixed(2) : "0.00";
+        document.getElementById('gpa4').innerText = gCredits > 0 ? (sum4 / gCredits).toFixed(2) : "0.00";
+        // Toplam Kredi kutusu artık tüm girilen kredileri gösterir
+        document.getElementById('totalCredits').innerText = rCredits;
+    }
+
+    // --- REVOLUTIONARY PARSER (V9 - Pattern Matching) ---
+    function openModal() { modal.style.display = 'flex'; pasteArea.focus(); }
+    function closeModal() { modal.style.display = 'none'; pasteArea.value = ''; }
+
+    function processPaste() {
+        const rawText = pasteArea.value;
+        if (!rawText.trim()) return;
+
+        try {
+            // Tabloyu sıfırla (Boş slot oluşmaması için)
+            tableBody.innerHTML = "";
+
+            // Tek satıra indir
+            const singleLineText = rawText.replace(/\s+/g, ' ');
+
+            let courses = [];
+            
+            // Desen: (Kod) ... (Yıl) (İsim) (Kredi) ... [Opsiyonel Notlar]
+            const regex = /(\d{7}).*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\d{7}|$)/g;
+            
+            let match;
+            while ((match = regex.exec(singleLineText)) !== null) {
+                const courseName = match[3].trim(); 
+                const courseCredit = match[4]; 
+                const restOfBlock = match[5]; 
+                
+                let vize = "";
+                let final = "";
+
+                const vizeMatch = restOfBlock.match(/Vize\s+(\d+)/i);
+                if (vizeMatch) vize = vizeMatch[1];
+
+                const finalMatch = restOfBlock.match(/Final\s+(\d+)/i);
+                if (finalMatch) final = finalMatch[1];
+                
+                courses.push({
+                    name: courseName,
+                    credit: courseCredit,
+                    vize: vize,
+                    final: final
+                });
+            }
+
+            if (courses.length > 0) {
+                courses.forEach(c => createRow(c.name, c.credit, c.vize, c.final));
+                calculateAll();
+                closeModal();
+            } else {
+                alert("Veri bulunamadı. Lütfen OBS'deki tablonun tamamını kopyaladığınızdan emin olun.");
+                // Eğer veri bulunamazsa boş kalmasın diye 2 satır ekle
+                addNewRow(); addNewRow();
+            }
+
+        } catch (error) {
+            alert("Hata: " + error.message);
+        }
+    }
+
+    // --- State & Row Mgmt ---
+    function saveData() {
+        const data = { 
+            rows: [], 
+            settings: { 
+                m: midtermInput.value, f: finalInput.value, 
+                p: passLimitInput.value, c: condLimitInput.value 
+            } 
+        };
+        tableBody.querySelectorAll('tr').forEach(r => {
+            let i = r.querySelectorAll('input');
+            data.rows.push({ n: i[0].value, cr: i[1].value, v: i[2].value, fi: i[3].value });
+        });
+        localStorage.setItem('gradeApp_v10', JSON.stringify(data));
+        saveMsg.style.opacity = '1'; setTimeout(() => saveMsg.style.opacity='0', 1000);
+    }
+
+    function loadData() {
+        const d = JSON.parse(localStorage.getItem('gradeApp_v10'));
+        if (d) {
+            midtermInput.value = d.settings.m; finalInput.value = d.settings.f;
+            passLimitInput.value = d.settings.p; condLimitInput.value = d.settings.c;
+            tableBody.innerHTML = "";
+            d.rows.forEach(r => createRow(r.n, r.cr, r.v, r.fi));
+        } else { addNewRow(); addNewRow(); }
+        calculateAll(false);
+    }
+
+    function addNewRow() { createRow(); calculateAll(); }
+    function createRow(n="", c="", v="", f="") {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text" value="${n}" placeholder="Ders..." oninput="calculateAll()"></td>
+            <td><input type="number" value="${c}" placeholder="Kr" oninput="calculateAll()"></td>
+            <td><input type="number" value="${v}" placeholder="Vize" oninput="calculateAll()"></td>
+            <td><input type="number" value="${f}" placeholder="Final" oninput="calculateAll()"></td>
+            <td class="result-cell">-</td>
+            <td><button class="btn btn-remove" onclick="this.closest('tr').remove();calculateAll()">Sil</button></td>`;
+        tableBody.appendChild(row);
+    }
+    function clearAllData() { 
+        if(confirm("Sıfırla?")) { localStorage.removeItem('gradeApp_v10'); location.reload(); } 
+    }
+
+    [midtermInput, finalInput, passLimitInput, condLimitInput].forEach(i => i.addEventListener('input', () => calculateAll()));
+    
+    window.onload = loadData;
+</script>
+</body>
+</html>
