@@ -174,10 +174,13 @@ function updateSummary() {
 
         if (credit > 0) registeredCredits += credit;
 
-        if (!isNaN(v) && !isNaN(f)) {
+        if (!isNaN(v)) {
+            // If Final is missing, assume Final = Vize for the summary calculation
+            const effectiveFinal = isNaN(f) ? v : f;
+
             const mRatio = state.settings.vizeRatio / 100;
             const fRatio = state.settings.finalRatio / 100;
-            let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
+            let avg = parseFloat(((v * mRatio) + (effectiveFinal * fRatio)).toFixed(2));
             const gInfo = getCoefficient(avg);
 
             if (credit > 0) {
