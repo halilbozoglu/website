@@ -10,7 +10,7 @@ function getGradeFromScore(score) {
     // Round to nearest integer for grade bin check? 
     // Usually grades are integers or handled as float. 
     // Strict comparison:
-    if (score >= 88) return { letter: 'AA', coeff: 4.00 };
+    if (score >= 82) return { letter: 'AA', coeff: 4.00 };
     if (score >= 81) return { letter: 'BA', coeff: 3.50 };
     if (score >= 73) return { letter: 'BB', coeff: 3.00 };
     if (score >= 64) return { letter: 'CB', coeff: 2.50 };
@@ -208,7 +208,7 @@ function calculateStatus(vize, final, credit, settings) {
             // This matches the boundary inputs exactly.
             // Grade Targets
             const TARGETS = [
-                { l: 'AA', min: 88 },
+                { l: 'AA', min: 82 },
                 { l: 'BA', min: 81 },
                 { l: 'BB', min: 73 },
                 { l: 'CB', min: 64 },
