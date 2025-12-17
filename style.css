@@ -334,129 +334,159 @@ td input:focus {
         padding: 0 5px;
     }
 
-    /* Transform Table to Card View */
+    /* Transform Table to Card Grid */
     thead {
         display: none;
     }
 
     tbody,
-    tr,
-    td {
-        display: block;
+    tr {
+        display: grid;
         width: 100%;
     }
 
+    tbody {
+        gap: 15px;
+    }
+
     tr {
-        margin-bottom: 20px;
+        grid-template-columns: 1fr 1fr;
+        /* 2 Column Grid */
+        gap: 8px;
         background-color: var(--card-bg);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 15px;
+        padding: 12px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
 
     td {
-        text-align: right;
-        /* Aligns input/content to right */
-        padding: 10px 0;
-        border-bottom: 1px solid #333;
-        position: relative;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        min-height: 50px;
+        display: block;
+        padding: 0;
+        border: none;
+        text-align: left;
     }
 
-    td:last-child {
-        border-bottom: none;
-        justify-content: flex-end;
-        /* Buttons at end */
+    /* 1. Ders Adı - Full Width */
+    td:nth-of-type(1) {
+        grid-column: span 2;
     }
 
-    /* Add Labels via CSS */
+    /* 2. Kredi & 6. Sil Button - Bottom Row shared? or separate? */
+    /* Layout: 
+       Row 1: Name (Span 2)
+       Row 2: Vize | Final
+       Row 3: Kredi | Sil
+       Row 4: Result (Span 2)
+    */
+
+    /* Vize (3) & Final (4) - Natural Flow (1 col each) */
+
+    /* Result (5) - Full Width */
+    td:nth-of-type(5) {
+        grid-column: span 2;
+        margin-top: 5px;
+        padding-top: 5px;
+        border-top: 1px dashed #333;
+    }
+
+    /* Kredi (2) & Sil (6) */
+    /* We want Kredi and Sil on the same row, probably after Vize/Final? 
+       Order in HTML: Name(1), Credit(2), Vize(3), Final(4), Result(5), Delete(6).
+       Grid Auto Flow is Row.
+       1 (Span 2) -> Row 1
+       2 (1 col) -> Row 2 Left
+       3 (1 col) -> Row 2 Right
+       4 (1 col) -> Row 3 Left
+       5 (Span 2) -> Row 4
+       6 (1 col) ... Wait, HTML order matters.
+       
+       We need to force positions if we want specific layout.
+       Let's try:
+       Name (1) -> Order 1 (Span 2)
+       Vize (3) -> Order 2
+       Final (4) -> Order 3
+       Kredi (2) -> Order 4
+       Delete (6) -> Order 5
+       Result (5) -> Order 6 (Span 2)
+    */
+
+    td:nth-of-type(1) {
+        order: 1;
+        grid-column: span 2;
+    }
+
+    td:nth-of-type(3) {
+        order: 2;
+    }
+
+    /* Vize */
+    td:nth-of-type(4) {
+        order: 3;
+    }
+
+    /* Final */
+    td:nth-of-type(2) {
+        order: 4;
+    }
+
+    /* Kredi */
+    td:nth-of-type(6) {
+        order: 5;
+    }
+
+    /* Sil */
+    td:nth-of-type(5) {
+        order: 6;
+        grid-column: span 2;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 8px;
+        border-radius: 6px;
+    }
+
+    /* Hide Labels (Data-Label) to save space */
     td::before {
-        content: attr(data-label);
-        float: left;
-        font-weight: bold;
-        color: var(--accent);
-        text-transform: uppercase;
-        font-size: 0.85rem;
-    }
-
-    /* Specific Labels by Order (Fallback if data-label missing in HTML) */
-    /* But safer to update HTML to include data-label or rely on nth-child */
-    td:nth-of-type(1)::before {
-        content: "Ders";
-    }
-
-    td:nth-of-type(2)::before {
-        content: "Kredi";
-    }
-
-    td:nth-of-type(3)::before {
-        content: "Vize";
-    }
-
-    td:nth-of-type(4)::before {
-        content: "Final";
-    }
-
-    td:nth-of-type(5)::before {
-        content: "Durum";
-    }
-
-    td:nth-of-type(6)::before {
-        content: "İşlem";
+        display: none;
     }
 
     /* Input styling adjustment for mobile */
     td input {
-        width: 60%;
-        /* Giving space for label */
-        text-align: right;
+        width: 100%;
+        text-align: center;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        padding: 10px;
+    }
+
+    td input:focus {
+        border-color: var(--accent);
     }
 
     /* Result cell specific */
     td.result-cell {
-        display: block;
-        text-align: right;
-    }
-
-    td.result-cell::before {
-        display: block;
-        text-align: left;
-        margin-bottom: 5px;
+        text-align: center;
+        width: 100%;
     }
 
     /* Buttons */
     .btn {
         width: 100%;
-        margin-bottom: 10px;
-        padding: 15px;
-        /* Larger touch target */
-    }
-
-    .btn-clear,
-    .btn-import,
-    .btn-add {
-        margin-left: 0;
-    }
-
-    .table-container>div {
+        padding: 10px;
+        margin: 0;
+        height: 100%;
+        /* Fill cell */
         display: flex;
-        flex-direction: column;
-        gap: 10px;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-remove {
-        width: auto;
-        padding: 8px 16px;
+        background-color: var(--danger);
     }
 
     /* Target Grid Mobile Override: Vertical List */
     .target-grid {
         grid-template-columns: 1fr;
-        /* Stack vertically (not side-by-side) */
     }
 }
 
