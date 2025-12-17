@@ -159,8 +159,13 @@ function updateCourseData(id, field, value) {
  * Calculation Logic
  */
 function getCoefficient(score) {
-    const rounded = Math.round(score);
-    return GRADE_SCALE.find(g => rounded >= g.min && rounded <= g.max) || { coeff: 0.00, letter: 'FF' };
+    // Round score to 2 decimal places before calculation to match typical inputs
+    // But formulas are continuous, so exact value is better.
+    // Let's use the exact value or fixed to 2 decimals if that's standard.
+    // The user formulas are linear, so directly applying them is best.
+    const coeff = calculateCoefficient(score);
+    const letter = getLetterForCoeff(coeff);
+    return { coeff: coeff, letter: letter };
 }
 
 function formatNeeded(s) { return s <= 0 ? "OK" : (s > 100 ? ">100" : Math.ceil(s)); }
@@ -185,11 +190,29 @@ function calculateStatus(vize, final, credit, settings) {
             rowHtml += `<div>Normal: <span class="${neededForPass > 100 ? 'status-fail' : 'status-pass'}">${formatNeeded(neededForPass)}</span> | Şartlı: <span class="${neededForCond > 100 ? 'status-fail' : 'status-cond'}">${formatNeeded(neededForCond)}</span></div>`;
 
             let targetsHtml = "";
-            TARGET_LETTERS.forEach(letter => {
-                const g = GRADE_SCALE.find(gr => gr.letter === letter);
+            // With formulas, reverse calculation is needed for targets (Coeff -> Score)
+            // Or we can just show generic thresholds since the formulas are linear ranges.
+            // AA (4.0) usually requires ~81-100.
+            // Let's stick to the main letter boundaries for the targets:
+            // AA(4.0), BA(3.5), BB(3.0), CB(2.5), CC(2.0), DC(1.5)
+            // We can invert the formulas:
+            // For AA (3.5+): 3.5 = (y-25)/16 => y = 3.5*16 + 25 = 56+25 = 81.
+            // For BA (3.5): 81. For BB (3.0): (y-19)/18=3 => y=73.
+            // This matches the boundary inputs exactly.
+            const TARGETS = [
+                { l: 'AA', min: 81 },
+                { l: 'BA', min: 73 },
+                { l: 'BB', min: 64 },
+                { l: 'CB', min: 57 },
+                { l: 'CC', min: 49 },
+                { l: 'DC', min: 39 }
+            ];
+
+            TARGETS.forEach(t => {
+                const g = t;
                 if (g) {
                     let req = Math.ceil((g.min - currentPoints) / fRatio);
-                    if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${letter}</span><span>${req < 0 ? 0 : req}</span></div>`;
+                    if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${t.l}</span><span>${req < 0 ? 0 : req}</span></div>`;
                 }
             });
             if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
