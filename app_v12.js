@@ -3,22 +3,75 @@
  */
 // Formula-Based Coefficient Calculation
 // Based on user provided formulas specific to ranges
-// Grade Scale (Discrete Bins based on Image)
-// AA: 88-100, BA: 81-87, BB: 73-80, CB: 64-72
-// CC: 57-63, DC: 49-56, DD: 39-48, FD: 34-38, FF: 0-33
-function getGradeFromScore(score) {
-    // Round to nearest integer for grade bin check? 
-    // Usually grades are integers or handled as float. 
-    // Strict comparison based on KTUN Regulation:
-    if (score >= 82) return { letter: 'AA', coeff: 4.00 };
-    if (score >= 74) return { letter: 'BA', coeff: 3.50 };
-    if (score >= 65) return { letter: 'BB', coeff: 3.00 };
-    if (score >= 58) return { letter: 'CB', coeff: 2.50 };
-    if (score >= 50) return { letter: 'CC', coeff: 2.00 };
-    if (score >= 40) return { letter: 'DC', coeff: 1.50 };
-    if (score >= 35) return { letter: 'DD', coeff: 1.00 };
-    if (score >= 25) return { letter: 'FD', coeff: 0.50 };
-    return { letter: 'FF', coeff: 0.00 };
+// Formula-Based Coefficient Calculation (User Provided)
+// 81-100: (y+52)/38
+// 73-81: (y-25)/16
+// 64-73: (y-19)/18
+// 57-64: (y-29)/14
+// 49-57: (y-25)/16
+// 39-49: (y-19)/20
+// 34-39: (y-29)/10
+// 0-34: y/68
+function getGradeFromScore(y) {
+    let x = 0;
+    if (y >= 81) {
+        x = (y + 52) / 38;
+    } else if (y >= 73) {
+        x = (y - 25) / 16;
+    } else if (y >= 64) {
+        x = (y - 19) / 18;
+    } else if (y >= 57) {
+        x = (y - 29) / 14;
+    } else if (y >= 49) {
+        x = (y - 25) / 16;
+    } else if (y >= 39) {
+        x = (y - 19) / 20;
+    } else if (y >= 34) {
+        x = (y - 29) / 10;
+    } else {
+        x = y / 68;
+    }
+
+    // Cap at 4.00 and floor at 0.00
+    if (x > 4) x = 4;
+    if (x < 0) x = 0;
+
+    // Determine Letter based on Coefficient (Standard Intervals)
+    // 4.00 AA, 3.50 BA, 3.00 BB, 2.50 CB, 2.00 CC, 1.50 DC, 1.00 DD, 0.50 FD
+    let letter = 'FF';
+    if (x >= 3.75) letter = 'AA'; // Approximation for display? Or use ranges?
+    // Better to use the score ranges for Letter determination to match the start points.
+    // 81->3.5 (BA). 100->4.0 (AA).
+    // Let's use the explicit score ranges for Letter to avoid float ambiguity.
+    if (y >= 81) letter = 'AA'; // Wait, 81 gives 3.5 which is BA.
+    // User formula: 81 is bottom of top range. (81+52)/38 = 3.5. 
+    // IF result is 3.5, is it AA or BA? Standard: 4.0=AA, 3.5=BA.
+    // So 81 is BA. But range goes up to 100 (4.0).
+    // Where does AA start? Usually 4.0. Or 3.75+? 
+    // Previous "Mutlak" AA was 82.
+    // Let's stick to the Coefficients.
+    // We will return the precise Coeff.
+    // For Letter, let's just use standard discrete checks for display?
+    // USER REQUESTED: "65,33 ortalamaya 2,78 yazıyor... bu denkleme göre yazınca 2,55 çıkıyor"
+    // So 65.33 -> 2.55 (CB range).
+    // I will return the precise coefficient.
+
+    // Letter Mapping (Approximate based on ranges)
+    if (y >= 88) letter = 'AA'; // Guessing top tier
+    else if (y >= 81) letter = 'BA';
+    else if (y >= 73) letter = 'BB';
+    else if (y >= 64) letter = 'CB';
+    else if (y >= 57) letter = 'CC';
+    else if (y >= 49) letter = 'DC';
+    else if (y >= 39) letter = 'DD';
+    else if (y >= 34) letter = 'FD';
+    else letter = 'FF';
+
+    // Override AA start based on strict 4.0 requirement? 
+    // If coeff > 3.75 maybe?
+    // Let's keep it simple.
+
+    return { letter: letter, coeff: parseFloat(x.toFixed(2)) };
 }
 
 const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
@@ -206,15 +259,15 @@ function calculateStatus(vize, final, credit, settings) {
             // For AA (3.5+): 3.5 = (y-25)/16 => y = 3.5*16 + 25 = 56+25 = 81.
             // For BA (3.5): 81. For BB (3.0): (y-19)/18=3 => y=73.
             // This matches the boundary inputs exactly.
-            // Grade Targets
+            // Grade Targets (Based on start of formula ranges)
             const TARGETS = [
-                { l: 'AA', min: 82 },
-                { l: 'BA', min: 74 },
-                { l: 'BB', min: 65 },
-                { l: 'CB', min: 58 },
-                { l: 'CC', min: 50 },
-                { l: 'DC', min: 40 },
-                { l: 'DD', min: 35 }
+                { l: 'AA', min: 88 }, // Est.
+                { l: 'BA', min: 81 },
+                { l: 'BB', min: 73 },
+                { l: 'CB', min: 64 },
+                { l: 'CC', min: 57 },
+                { l: 'DC', min: 49 },
+                { l: 'DD', min: 39 }
             ];
 
             TARGETS.forEach(t => {
