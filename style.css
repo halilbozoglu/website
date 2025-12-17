@@ -12,7 +12,11 @@
     --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
     background-color: var(--bg-color);
@@ -22,7 +26,10 @@ body {
     min-height: 100vh;
 }
 
-.container { max-width: 1200px; margin: 0 auto; }
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
 /* --- Settings --- */
 .settings-panel {
@@ -38,71 +45,239 @@ body {
 }
 
 .save-indicator {
-    position: absolute; top: 10px; right: 15px;
-    font-size: 0.75rem; color: var(--success);
-    opacity: 0; transition: opacity 0.5s;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 0.75rem;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.5s;
 }
 
-.input-group { display: flex; flex-direction: column; }
-.input-group label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
-.input-group input {
-    background-color: var(--input-bg); border: 1px solid var(--border);
-    color: var(--text-main); padding: 12px; border-radius: 8px; font-size: 1rem;
+.input-group {
+    display: flex;
+    flex-direction: column;
 }
-.input-group input:focus { outline: none; border-color: var(--accent); }
+
+.input-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.input-group input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
 
 /* --- Table --- */
 .table-container {
-    background-color: var(--card-bg); border-radius: 12px;
-    padding: 20px; overflow-x: auto; border: 1px solid var(--border);
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
 }
-table { width: 100%; border-collapse: collapse; min-width: 900px; }
-th { text-align: left; padding: 15px; color: var(--accent); border-bottom: 2px solid var(--border); }
-td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+th {
+    text-align: left;
+    padding: 15px;
+    color: var(--accent);
+    border-bottom: 2px solid var(--border);
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
 td input {
-    width: 100%; background-color: var(--input-bg);
-    border: 1px solid transparent; color: white; padding: 10px; border-radius: 6px;
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid transparent;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
 }
-td input:focus { border-color: var(--accent); outline: none; }
+
+td input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
 
 /* --- Results --- */
-.result-cell { font-size: 0.9rem; line-height: 1.5; }
-.status-pass { color: var(--success); font-weight: bold; }
-.status-cond { color: var(--warning); font-weight: bold; }
-.status-fail { color: var(--danger); font-weight: bold; }
+.result-cell {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
 
-.target-container { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
-.target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.target-item { background-color: #252525; padding: 4px; border-radius: 4px; text-align: center; font-size: 0.8rem; border: 1px solid #333; }
-.t-lbl { color: var(--accent); font-weight: 700; margin-right: 3px; }
+.status-pass {
+    color: var(--success);
+    font-weight: bold;
+}
+
+.status-cond {
+    color: var(--warning);
+    font-weight: bold;
+}
+
+.status-fail {
+    color: var(--danger);
+    font-weight: bold;
+}
+
+.target-container {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+}
+
+.target-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.target-item {
+    background-color: #252525;
+    padding: 4px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.8rem;
+    border: 1px solid #333;
+}
+
+.t-lbl {
+    color: var(--accent);
+    font-weight: 700;
+    margin-right: 3px;
+}
 
 /* --- Buttons --- */
-.btn { cursor: pointer; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; transition: opacity 0.2s; }
-.btn:hover { opacity: 0.8; }
-.btn-add { background-color: var(--accent); color: #000; margin-top: 15px; }
-.btn-remove { background-color: var(--danger); color: white; padding: 8px 12px; font-size: 0.8rem; }
-.btn-clear { background-color: #444; color: #ccc; margin-left: 10px; }
-.btn-import { background-color: var(--success); color: #000; margin-left: 10px; }
+.btn {
+    cursor: pointer;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+.btn-add {
+    background-color: var(--accent);
+    color: #000;
+    margin-top: 15px;
+}
+
+.btn-remove {
+    background-color: var(--danger);
+    color: white;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+.btn-clear {
+    background-color: #444;
+    color: #ccc;
+    margin-left: 10px;
+}
+
+.btn-import {
+    background-color: var(--success);
+    color: #000;
+    margin-left: 10px;
+}
 
 /* --- Modal --- */
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
-.modal-overlay.active { display: flex; } /* Added .active class support for JS toggle */
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* Added .active class support for JS toggle */
 .modal {
-    background: var(--card-bg); padding: 25px; border-radius: 12px;
-    width: 90%; max-width: 600px; border: 1px solid var(--border);
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    border: 1px solid var(--border);
 }
-.modal h2 { margin-bottom: 15px; color: var(--accent); }
+
+.modal h2 {
+    margin-bottom: 15px;
+    color: var(--accent);
+}
+
 .modal textarea {
-    width: 100%; height: 200px; background: var(--input-bg);
-    color: var(--text-main); border: 1px solid var(--border);
-    padding: 10px; border-radius: 8px; resize: vertical; margin-bottom: 15px;
+    width: 100%;
+    height: 200px;
+    background: var(--input-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 8px;
+    resize: vertical;
+    margin-bottom: 15px;
 }
-.modal-info { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
+
+.modal-info {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
 
 /* --- Summary --- */
-.summary-panel { margin-top: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-.summary-card { background: linear-gradient(145deg, var(--card-bg), #252530); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
-.summary-value { font-size: 2rem; font-weight: bold; color: var(--accent); }
+.summary-panel {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.summary-card {
+    background: linear-gradient(145deg, var(--card-bg), #252530);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.summary-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent);
+}

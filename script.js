@@ -98,34 +98,15 @@ function updateCourseData(id, field, value) {
     const course = state.courses.find(c => c.id === id);
     if (course) {
         course[field] = value;
-        // Don't save on every keystroke to avoid UI lag/jumps, but for this scale it's fine.
-        // Actually, render() rebuilds DOM which kills focus. We must NOT CALL saveState() -> render() on input!
-        // We should just update state and update the result cell specifically, OR 
-        // rely on a smarter render. 
-        // Since we are doing a simple app, let's update state but ONLY save, NOT render unless valid.
-        // Wait, if we don't render, the analysis column won't update.
-        // The reference file updates everything on 'input'.
-        // To avoid focus loss, we can construct the table once and only update values?
-        // OR: We can just use the reference file's approach: READ from DOM -> Calculate -> Write to DOM.
-        // But I want to keep the state-based approach if possible.
-        // Problem: Re-rendering the whole table destroys the input element you are typing in, losing focus.
+        localStorage.setItem('gradeCalcData_v1', JSON.stringify(state));
 
-        // HYBRID APPROACH: Update the specific row's result cell immediately without full re-render.
-        // But for simplicity, let's update the specific DOM result + save state silently.
-
-        // Recalculate just this row's analysis
         const row = document.querySelector(`tr[data-id="${id}"]`);
         if (row) {
             const analysis = calculateStatus(course.vize, course.final, course.credit, state.settings);
             const resultCell = row.querySelector('.result-cell');
             if (resultCell) resultCell.innerHTML = analysis;
-
-            // Also update summary
             updateSummary();
         }
-
-        // Save silently (debounce could be better but this is fine)
-        localStorage.setItem('gradeCalcData_v1', JSON.stringify(state));
     }
 }
 
@@ -147,13 +128,11 @@ function calculateStatus(vize, final, credit, settings) {
 
     let rowHtml = "";
 
-    // Normalize inputs
     const v = vize === "" ? NaN : parseFloat(vize);
     const f = final === "" ? NaN : parseFloat(final);
 
     if (!isNaN(v)) {
         if (isNaN(f)) {
-            // Hedef Modu (Target Mode)
             const currentPoints = v * mRatio;
             const neededForPass = (pLimit - currentPoints) / fRatio;
             const neededForCond = (cLimit - currentPoints) / fRatio;
@@ -170,7 +149,6 @@ function calculateStatus(vize, final, credit, settings) {
             });
             if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
         } else {
-            // Durum Modu (Result Mode)
             let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
             let status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
             const gInfo = getCoefficient(avg);
@@ -240,7 +218,6 @@ function parseOBS() {
             const vizeMatch = restOfBlock.match(/Vize\s+(\d+)/i);
             if (vizeMatch) vize = vizeMatch[1];
             else {
-                // Fallback: finding the first 1-3 digit number like previous logic if exact pattern fails
                 const gradeMatch = restOfBlock.match(/\b(\d{1,3})\b/);
                 if (gradeMatch && parseInt(gradeMatch[1]) <= 100) vize = gradeMatch[1];
             }
@@ -259,7 +236,7 @@ function parseOBS() {
 
         if (newCourses.length > 0) {
             state.courses = [...state.courses, ...newCourses];
-            saveState(); // Will trigger render
+            saveState();
             closeModal();
         } else {
             alert("Veri bulunamadı. OBS tablonuzun formatı farklı olabilir.");
