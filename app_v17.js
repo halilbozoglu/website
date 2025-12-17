@@ -414,7 +414,8 @@ function parseOBS() {
         // Regex Lookahead (?=\d{7}|$) is risky if other numbers exist.
         // Attempt to anchor to the table structure more reliably.
         // Course Code (7 digits) ... Year (4 digits) ... Name ... Credit (1-2 digits) ...
-        const regex = /(\d{7}).*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\d{7}|$)/g;
+        // FIXED: Use \b to ensure we match specific 7-digit course codes and NOT 9-digit Student IDs
+        const regex = /\b(\d{7})\b.*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\b\d{7}\b|$)/g;
 
         let match;
         let newCourses = [];
