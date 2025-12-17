@@ -9,15 +9,15 @@
 function getGradeFromScore(score) {
     // Round to nearest integer for grade bin check? 
     // Usually grades are integers or handled as float. 
-    // Strict comparison:
+    // Strict comparison based on KTUN Regulation:
     if (score >= 82) return { letter: 'AA', coeff: 4.00 };
-    if (score >= 81) return { letter: 'BA', coeff: 3.50 };
-    if (score >= 73) return { letter: 'BB', coeff: 3.00 };
-    if (score >= 64) return { letter: 'CB', coeff: 2.50 };
-    if (score >= 57) return { letter: 'CC', coeff: 2.00 };
-    if (score >= 49) return { letter: 'DC', coeff: 1.50 };
-    if (score >= 39) return { letter: 'DD', coeff: 1.00 };
-    if (score >= 34) return { letter: 'FD', coeff: 0.50 };
+    if (score >= 74) return { letter: 'BA', coeff: 3.50 };
+    if (score >= 65) return { letter: 'BB', coeff: 3.00 };
+    if (score >= 58) return { letter: 'CB', coeff: 2.50 };
+    if (score >= 50) return { letter: 'CC', coeff: 2.00 };
+    if (score >= 40) return { letter: 'DC', coeff: 1.50 };
+    if (score >= 35) return { letter: 'DD', coeff: 1.00 };
+    if (score >= 25) return { letter: 'FD', coeff: 0.50 };
     return { letter: 'FF', coeff: 0.00 };
 }
 
@@ -209,12 +209,12 @@ function calculateStatus(vize, final, credit, settings) {
             // Grade Targets
             const TARGETS = [
                 { l: 'AA', min: 82 },
-                { l: 'BA', min: 81 },
-                { l: 'BB', min: 73 },
-                { l: 'CB', min: 64 },
-                { l: 'CC', min: 57 },
-                { l: 'DC', min: 49 },
-                { l: 'DD', min: 39 }
+                { l: 'BA', min: 74 },
+                { l: 'BB', min: 65 },
+                { l: 'CB', min: 58 },
+                { l: 'CC', min: 50 },
+                { l: 'DC', min: 40 },
+                { l: 'DD', min: 35 }
             ];
 
             TARGETS.forEach(t => {
