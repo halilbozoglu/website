@@ -149,6 +149,22 @@ function updateCourseData(id, field, value) {
 }
 
 /**
+ * Validation Helper
+ */
+function validateInput(el) {
+    let val = parseFloat(el.value);
+    if (val < 0) {
+        el.value = 0;
+        val = 0;
+    }
+    if (val > 100) {
+        el.value = 100;
+        val = 100;
+    }
+    return val;
+}
+
+/**
  * Calculation Logic
  */
 function getCoefficient(score) {
@@ -161,7 +177,16 @@ function getCoefficient(score) {
     return { coeff: coeff, letter: letter };
 }
 
-function formatNeeded(s) { return s <= 0 ? "OK" : (s > 100 ? ">100" : Math.ceil(s)); }
+function formatNeeded(s, baraj) {
+    let val = Math.ceil(s);
+    if (val > 100) return ">100";
+
+    // Even if mathematically you need less (or 0), the Final Baraj is the absolute floor.
+    if (val < baraj) {
+        return `${baraj} (Baraj)`;
+    }
+    return val;
+}
 
 function calculateStatus(vize, final, credit, settings) {
     const mRatio = settings.vizeRatio / 100;
@@ -181,7 +206,15 @@ function calculateStatus(vize, final, credit, settings) {
             const neededForPass = (pLimit - currentPoints) / fRatio;
             const neededForCond = (cLimit - currentPoints) / fRatio;
 
-            rowHtml += `<div>Normal: <span class="${neededForPass > 100 ? 'status-fail' : 'status-pass'}">${formatNeeded(neededForPass)}</span> | Şartlı: <span class="${neededForCond > 100 ? 'status-fail' : 'status-cond'}">${formatNeeded(neededForCond)}</span></div>`;
+            // Pass formatNeeded calculation
+            const passStr = formatNeeded(neededForPass, finalBaraj);
+            const condStr = formatNeeded(neededForCond, finalBaraj);
+
+            // Determine colors. If ">100", it's fail.
+            const pClass = passStr === ">100" ? 'status-fail' : 'status-pass';
+            const cClass = condStr === ">100" ? 'status-fail' : 'status-cond';
+
+            rowHtml += `<div>Normal: <span class="${pClass}">${passStr}</span> | Şartlı: <span class="${cClass}">${condStr}</span></div>`;
 
             let targetsHtml = "";
             // With formulas, reverse calculation is needed for targets (Coeff -> Score)
@@ -206,7 +239,14 @@ function calculateStatus(vize, final, credit, settings) {
                 const g = t;
                 if (g) {
                     let req = Math.ceil((g.min - currentPoints) / fRatio);
-                    if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${t.l}</span><span>${req < 0 ? 0 : req}</span></div>`;
+                    // Also apply baraj to target letters? Usually Baraj is just for Passing (DD or CC).
+                    // But if you need 20 for AA (mathematically), you still need 35 for valid final.
+                    // Let's silently enforce min 35 for targets too?
+                    // User text implies "normal ve şartlı geçiş için gereken notlardada ... yaz".
+                    // I won't clutter the target bubbles with "(Baraj)" text, but I will enforce the floor value.
+                    if (req < finalBaraj) req = finalBaraj;
+
+                    if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${t.l}</span><span>${req}</span></div>`;
                 }
             });
             if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
@@ -345,8 +385,8 @@ function render() {
         row.innerHTML = `
             <td><input type="text" value="${course.name}" placeholder="Ders..." oninput="updateCourseData(${course.id}, 'name', this.value)"></td>
             <td><input type="number" value="${course.credit}" placeholder="Kr" oninput="updateCourseData(${course.id}, 'credit', this.value)"></td>
-            <td><input type="number" value="${course.vize}" placeholder="Vize" oninput="updateCourseData(${course.id}, 'vize', this.value)"></td>
-            <td><input type="number" value="${course.final}" placeholder="Final" oninput="updateCourseData(${course.id}, 'final', this.value)"></td>
+            <td><input type="number" value="${course.vize}" placeholder="Vize" oninput="validateInput(this); updateCourseData(${course.id}, 'vize', this.value)"></td>
+            <td><input type="number" value="${course.final}" placeholder="Final" oninput="validateInput(this); updateCourseData(${course.id}, 'final', this.value)"></td>
             <td class="result-cell">${analysisHtml}</td>
             <td><button class="btn btn-remove" onclick="removeCourse(${course.id})">Sil</button></td>
         `;
@@ -363,7 +403,10 @@ function closeModal() { modal.classList.remove('active'); document.getElementByI
 
 // Global Event Listeners for Settings
 ['vizeRatio', 'finalRatio', 'passGrade', 'condGrade', 'finalThreshold'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updateSettings);
+    document.getElementById(id).addEventListener('input', function () {
+        validateInput(this);
+        updateSettings();
+    });
 });
 
 document.getElementById('addCourseBtn').addEventListener('click', () => addCourse());
