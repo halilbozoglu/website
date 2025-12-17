@@ -34,14 +34,50 @@ body {
 /* --- Settings --- */
 .settings-panel {
     background-color: var(--card-bg);
-    padding: 20px;
+    padding: 35px 20px 20px 20px;
+    /* More top padding for button */
     border-radius: 12px;
     margin-bottom: 25px;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.settings-content {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
-    border: 1px solid var(--border);
-    position: relative;
+    transition: opacity 0.3s ease, margin 0.3s ease;
+}
+
+.settings-panel.collapsed .settings-content {
+    display: none;
+    opacity: 0;
+}
+
+.settings-panel.collapsed {
+    padding-bottom: 10px;
+    /* Smaller padding when collapsed */
+}
+
+.btn-toggle {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #ccc;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid #444;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.btn-toggle:hover {
+    background: #444;
+    color: white;
 }
 
 .save-indicator {

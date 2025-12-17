@@ -412,5 +412,19 @@ function closeModal() { modal.classList.remove('active'); document.getElementByI
 document.getElementById('addCourseBtn').addEventListener('click', () => addCourse());
 document.getElementById('resetBtn').addEventListener('click', clearAll);
 
+// Toggle Settings Logic
+const toggleBtn = document.getElementById('toggleSettings');
+const settingsPanel = document.querySelector('.settings-panel');
+if (toggleBtn && settingsPanel) {
+    toggleBtn.addEventListener('click', () => {
+        settingsPanel.classList.toggle('collapsed');
+        if (settingsPanel.classList.contains('collapsed')) {
+            toggleBtn.textContent = 'Ayarları Göster ▼';
+        } else {
+            toggleBtn.textContent = 'Gizle ▲';
+        }
+    });
+}
+
 // Init
 init();
