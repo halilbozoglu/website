@@ -452,4 +452,37 @@ td input:focus {
         width: auto;
         padding: 8px 16px;
     }
+
+    /* Target Grid Mobile Override: Vertical List */
+    .target-grid {
+        grid-template-columns: 1fr;
+        /* Stack vertically (not side-by-side) */
+    }
+}
+
+/* --- Collapsible Targets --- */
+details.target-details {
+    margin-top: 10px;
+    padding-top: 5px;
+    border-top: 1px dashed var(--border);
+}
+
+details.target-details summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 8px;
+    outline: none;
+    list-style: none;
+    /* Hide default triangle in some browsers if desired, but default is fine usually */
+}
+
+details.target-details summary:hover {
+    color: var(--accent);
+}
+
+/* Optional: rotate summary marker? */
+details.target-details[open] summary {
+    margin-bottom: 10px;
 }

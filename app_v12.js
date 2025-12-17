@@ -249,7 +249,13 @@ function calculateStatus(vize, final, credit, settings) {
                     if (req <= 100) targetsHtml += `<div class="target-item"><span class="t-lbl">${t.l}</span><span>${req}</span></div>`;
                 }
             });
-            if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
+            if (targetsHtml) {
+                rowHtml += `
+                <details class="target-details">
+                    <summary>Diğer Harf Hedefleri ▼</summary>
+                    <div class="target-grid">${targetsHtml}</div>
+                </details>`;
+            }
         } else {
             let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
             // Final Threshold Check
