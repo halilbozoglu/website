@@ -14,21 +14,37 @@
 // 0-34: y/68
 function getGradeFromScore(y) {
     let x = 0;
+    // Strict ranges based on user request:
+    // 1. [81.00 <= y <= 100.00] -> x = (y + 52) / 38
     if (y >= 81) {
         x = (y + 52) / 38;
-    } else if (y >= 73) {
+    }
+    // 2. [73.00 <= y < 81.00] -> x = (y - 25) / 16
+    else if (y >= 73) {
         x = (y - 25) / 16;
-    } else if (y >= 64) {
+    }
+    // 3. [64.00 <= y < 73.00] -> x = (y - 19) / 18
+    else if (y >= 64) {
         x = (y - 19) / 18;
-    } else if (y >= 57) {
+    }
+    // 4. [57.00 <= y < 64.00] -> x = (y - 29) / 14
+    else if (y >= 57) {
         x = (y - 29) / 14;
-    } else if (y >= 49) {
+    }
+    // 5. [49.00 <= y < 57.00] -> x = (y - 25) / 16
+    else if (y >= 49) {
         x = (y - 25) / 16;
-    } else if (y >= 39) {
+    }
+    // 6. [39.00 <= y < 49.00] -> x = (y - 19) / 20
+    else if (y >= 39) {
         x = (y - 19) / 20;
-    } else if (y >= 34) {
+    }
+    // 7. [34.00 <= y < 39.00] -> x = (y - 29) / 10
+    else if (y >= 34) {
         x = (y - 29) / 10;
-    } else {
+    }
+    // 8. [0.00 <= y < 34.00] -> x = y / 68
+    else {
         x = y / 68;
     }
 
@@ -292,7 +308,7 @@ function calculateStatus(vize, final, credit, settings) {
                 </details>`;
             }
         } else {
-            let avg = Math.round((v * mRatio) + (f * fRatio));
+            let avg = (v * mRatio) + (f * fRatio);
             // Final Threshold Check
             let status;
             let gInfo;
@@ -305,7 +321,9 @@ function calculateStatus(vize, final, credit, settings) {
                 gInfo = getCoefficient(avg);
             }
 
-            rowHtml = `<div style="font-weight:bold; font-size:1.1rem">Ort: ${avg}</div><div class="${status[1]}">${status[0]} (${gInfo.letter})</div>`;
+            // Display: Round average for UI display? User said "Sonucu virgülden sonra 2 basamak".
+            // That applies to Coeff "x". But showing Average with 2 decimals is also good practice.
+            rowHtml = `<div style="font-weight:bold; font-size:1.1rem">Ort: ${avg.toFixed(2)}</div><div class="${status[1]}">${status[0]} (${gInfo.letter})</div>`;
         }
     } else {
         rowHtml = "<span style='color:#666'>...</span>";
@@ -334,7 +352,7 @@ function updateSummary() {
             const fRatio = state.settings.finalRatio / 100;
             const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
 
-            let avg = Math.round((v * mRatio) + (effectiveFinal * fRatio));
+            let avg = (v * mRatio) + (effectiveFinal * fRatio);
             let gInfo;
 
             // Apply Final Threshold Logic to Summary
