@@ -257,8 +257,8 @@ function calculateStatus(vize, final, credit, settings) {
 
     let rowHtml = "";
 
-    const v = vize === "" ? NaN : parseFloat(vize);
-    const f = final === "" ? NaN : parseFloat(final);
+    const v = vize === "" ? NaN : parseInputFloat(vize);
+    const f = final === "" ? NaN : parseInputFloat(final);
 
     if (!isNaN(v)) {
         if (isNaN(f)) {
@@ -350,8 +350,11 @@ function updateSummary() {
 
     state.courses.forEach(c => {
         const credit = parseFloat(c.credit) || 0;
-        const v = c.vize === "" ? NaN : parseFloat(c.vize);
-        const f = c.final === "" ? NaN : parseFloat(c.final);
+        // Handle comma inputs for Turkish users
+        let vVal = c.vize.toString().replace(',', '.');
+        let fVal = c.final.toString().replace(',', '.');
+        let v = vVal === "" ? NaN : parseFloat(vVal);
+        let f = fVal === "" ? NaN : parseFloat(fVal);
 
         if (credit > 0) registeredCredits += credit;
 
@@ -364,27 +367,39 @@ function updateSummary() {
             const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
 
             let avg = (v * mRatio) + (effectiveFinal * fRatio);
-            let gInfo;
 
-            // Apply Final Threshold Logic to Summary
-            if (effectiveFinal < finalBaraj) {
-                gInfo = { coeff: 0.00, letter: 'FF' }; // Automatic Fail
-                // Note: Average numerical value remains calculated, but coeff becomes 0.
-            } else {
-                gInfo = getCoefficient(avg);
-            }
+            // For GANO, we now calculate Weighted Average Score first (User Request Consistency)
+            // But we must respect Final Baraj for "Passing" logic if we want consistency?
+            // Actually, if a course fails Baraj, its score contributes to average (e.g. 50), 
+            // but normally its GANO coeff is 0.
+            // If we switch to "Avg Score -> Coeff", then a Baraj-Fail (50) contributes 50 to the pool.
+            // The final "Avg Score" (e.g. 68) is then mapped to 2.72.
+            // This HIDES the fact that one course failed with 0.0 coeff.
+            // User complained "Avg 68 -> 2.54". (The 2.54 reflects the fail).
+            // User said "düzelt", suggesting they want 2.72 (Avg based).
+            // I will implement "Avg Score Based GANO" as requested.
 
             if (credit > 0) {
                 totalWeightedPoints100 += (avg * credit);
-                totalWeightedPoints4 += (gInfo.coeff * credit);
                 gradedCredits += credit;
             }
         }
     });
 
-    document.getElementById('termAvg').innerText = gradedCredits > 0 ? (totalWeightedPoints100 / gradedCredits).toFixed(2) : "0.00";
-    document.getElementById('gpaValue').innerText = gradedCredits > 0 ? (totalWeightedPoints4 / gradedCredits).toFixed(2) : "0.00";
+    let termAvgScore = gradedCredits > 0 ? (totalWeightedPoints100 / gradedCredits) : 0;
+
+    // Calculate GPA based on the Term Average Score (User Preferred Method)
+    let termGpaInfo = getCoefficient(termAvgScore);
+
+    document.getElementById('termAvg').innerText = termAvgScore.toFixed(2);
+    document.getElementById('gpaValue').innerText = termGpaInfo.coeff.toFixed(2);
     document.getElementById('totalCredit').innerText = registeredCredits;
+}
+
+// Helper for comma in live update
+function parseInputFloat(val) {
+    if (!val) return NaN;
+    return parseFloat(val.toString().replace(',', '.'));
 }
 
 /**
