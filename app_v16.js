@@ -411,14 +411,27 @@ function parseOBS() {
 
     try {
         const normalized = text.replace(/\s+/g, ' ');
+        // Regex Lookahead (?=\d{7}|$) is risky if other numbers exist.
+        // Attempt to anchor to the table structure more reliably.
+        // Course Code (7 digits) ... Year (4 digits) ... Name ... Credit (1-2 digits) ...
         const regex = /(\d{7}).*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\d{7}|$)/g;
 
         let match;
         let newCourses = [];
 
         while ((match = regex.exec(normalized)) !== null) {
+            const courseCode = match[1];
+            // Filter out false positives like Student IDs matching 7 digits
+            // Real course codes usually start with specific digits but vary.
+            // Check if Name contains invalid keywords found in headers
             const courseName = match[3].trim();
             const courseCredit = match[4];
+
+            // Fix: "Güz Dönemi Dönem Ortalaması" appearing as course
+            if (courseName.includes("Dönem") || courseName.includes("Ortalama") || courseName.includes("Genel")) {
+                continue;
+            }
+
             const restOfBlock = match[5];
 
             let vize = "";
@@ -428,6 +441,8 @@ function parseOBS() {
             if (vizeMatch) vize = vizeMatch[1];
             else {
                 const gradeMatch = restOfBlock.match(/\b(\d{1,3})\b/);
+                // "2026" (Year) might be matched if close? 
+                // Using 1-3 digits. 
                 if (gradeMatch && parseInt(gradeMatch[1]) <= 100) vize = gradeMatch[1];
             }
 
