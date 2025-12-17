@@ -68,6 +68,12 @@ function init() {
     } else {
         addCourse(false);
     }
+    // Ensure defaults exist for new settings
+    if (state.settings.vizeRatio === undefined) state.settings.vizeRatio = 40;
+    if (state.settings.finalRatio === undefined) state.settings.finalRatio = 60;
+    if (state.settings.passGrade === undefined) state.settings.passGrade = 50;
+    if (state.settings.condGrade === undefined) state.settings.condGrade = 40;
+    if (state.settings.finalThreshold === undefined) state.settings.finalThreshold = 35;
 
     // Fill Settings Inputs
     document.getElementById('vizeRatio').value = state.settings.vizeRatio;
@@ -245,8 +251,18 @@ function updateSummary() {
 
             const mRatio = state.settings.vizeRatio / 100;
             const fRatio = state.settings.finalRatio / 100;
+            const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
+
             let avg = parseFloat(((v * mRatio) + (effectiveFinal * fRatio)).toFixed(2));
-            const gInfo = getCoefficient(avg);
+            let gInfo;
+
+            // Apply Final Threshold Logic to Summary
+            if (effectiveFinal < finalBaraj) {
+                gInfo = { coeff: 0.00, letter: 'FF' }; // Automatic Fail
+                // Note: Average numerical value remains calculated, but coeff becomes 0.
+            } else {
+                gInfo = getCoefficient(avg);
+            }
 
             if (credit > 0) {
                 totalWeightedPoints100 += (avg * credit);
