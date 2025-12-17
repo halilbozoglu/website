@@ -31,6 +31,15 @@ body {
     margin: 0 auto;
 }
 
+.page-title {
+    text-align: center;
+    color: var(--accent);
+    margin-bottom: 25px;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
 /* --- Settings --- */
 .settings-panel {
     background-color: var(--card-bg);
