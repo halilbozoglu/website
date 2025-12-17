@@ -419,9 +419,9 @@ if (toggleBtn && settingsPanel) {
     toggleBtn.addEventListener('click', () => {
         settingsPanel.classList.toggle('collapsed');
         if (settingsPanel.classList.contains('collapsed')) {
-            toggleBtn.textContent = 'Ayarları Göster ▼';
+            toggleBtn.textContent = 'Ayarları Göster ▲';
         } else {
-            toggleBtn.textContent = 'Gizle ▲';
+            toggleBtn.textContent = 'Gizle ▼';
         }
     });
 }
