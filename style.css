@@ -339,6 +339,13 @@ td input:focus {
         display: none;
     }
 
+    /* Reset Table min-width to prevent overflow */
+    table {
+        min-width: 0;
+        width: 100%;
+        display: block;
+    }
+
     tbody,
     tr {
         display: grid;
