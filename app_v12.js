@@ -48,7 +48,8 @@ let state = {
         vizeRatio: 40,
         finalRatio: 60,
         passGrade: 50,
-        condGrade: 40
+        condGrade: 40,
+        finalThreshold: 35
     },
     courses: []
 };
@@ -73,6 +74,7 @@ function init() {
     document.getElementById('finalRatio').value = state.settings.finalRatio;
     document.getElementById('passGrade').value = state.settings.passGrade;
     document.getElementById('condGrade').value = state.settings.condGrade;
+    document.getElementById('finalThreshold').value = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
 
     render();
 }
@@ -95,6 +97,8 @@ function updateSettings() {
     state.settings.finalRatio = parseFloat(document.getElementById('finalRatio').value) || 0;
     state.settings.passGrade = parseFloat(document.getElementById('passGrade').value) || 50;
     state.settings.condGrade = parseFloat(document.getElementById('condGrade').value) || 40;
+    state.settings.finalThreshold = parseFloat(document.getElementById('finalThreshold').value);
+    if (isNaN(state.settings.finalThreshold)) state.settings.finalThreshold = 35;
     saveState();
 }
 
@@ -158,6 +162,7 @@ function calculateStatus(vize, final, credit, settings) {
     const fRatio = settings.finalRatio / 100;
     const pLimit = settings.passGrade;
     const cLimit = settings.condGrade;
+    const finalBaraj = settings.finalThreshold !== undefined ? settings.finalThreshold : 35;
 
     let rowHtml = "";
 
@@ -201,8 +206,17 @@ function calculateStatus(vize, final, credit, settings) {
             if (targetsHtml) rowHtml += `<div class="target-container"><div class="target-grid">${targetsHtml}</div></div>`;
         } else {
             let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
-            let status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
-            const gInfo = getCoefficient(avg);
+            // Final Threshold Check
+            let status;
+            let gInfo;
+
+            if (f < finalBaraj) {
+                status = ["KALDI", "status-fail"];
+                gInfo = { coeff: 0.00, letter: 'FF' }; // Automatic FF if below baraj
+            } else {
+                status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
+                gInfo = getCoefficient(avg);
+            }
 
             rowHtml = `<div style="font-weight:bold; font-size:1.1rem">Ort: ${avg}</div><div class="${status[1]}">${status[0]} (${gInfo.letter})</div>`;
         }
@@ -332,7 +346,7 @@ document.getElementById('openObsModalBtn').onclick = () => modal.classList.add('
 function closeModal() { modal.classList.remove('active'); document.getElementById('obsInput').value = ''; }
 
 // Global Event Listeners for Settings
-['vizeRatio', 'finalRatio', 'passGrade', 'condGrade'].forEach(id => {
+['vizeRatio', 'finalRatio', 'passGrade', 'condGrade', 'finalThreshold'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSettings);
 });
 
