@@ -3,41 +3,22 @@
  */
 // Formula-Based Coefficient Calculation
 // Based on user provided formulas specific to ranges
-function calculateCoefficient(y) {
-    let x = 0;
-    if (y >= 81) {
-        x = (y + 52) / 38;
-    } else if (y >= 73) {
-        x = (y - 25) / 16;
-    } else if (y >= 64) {
-        x = (y - 19) / 18;
-    } else if (y >= 57) {
-        x = (y - 29) / 14;
-    } else if (y >= 49) {
-        x = (y - 25) / 16;
-    } else if (y >= 39) {
-        x = (y - 19) / 20;
-    } else if (y >= 34) {
-        x = (y - 29) / 10;
-    } else {
-        x = y / 68;
-    }
-    // Cap at 4.00 and floor at 0.00 just in case, though formulas seem bound correct
-    if (x > 4) x = 4;
-    if (x < 0) x = 0;
-    return parseFloat(x.toFixed(2));
-}
-
-function getLetterForCoeff(c) {
-    if (c >= 4.00) return 'AA';
-    if (c >= 3.50) return 'BA';
-    if (c >= 3.00) return 'BB';
-    if (c >= 2.50) return 'CB';
-    if (c >= 2.00) return 'CC';
-    if (c >= 1.50) return 'DC';
-    if (c >= 1.00) return 'DD';
-    if (c >= 0.50) return 'FD';
-    return 'FF';
+// Grade Scale (Discrete Bins based on Image)
+// AA: 88-100, BA: 81-87, BB: 73-80, CB: 64-72
+// CC: 57-63, DC: 49-56, DD: 39-48, FD: 34-38, FF: 0-33
+function getGradeFromScore(score) {
+    // Round to nearest integer for grade bin check? 
+    // Usually grades are integers or handled as float. 
+    // Strict comparison:
+    if (score >= 88) return { letter: 'AA', coeff: 4.00 };
+    if (score >= 81) return { letter: 'BA', coeff: 3.50 };
+    if (score >= 73) return { letter: 'BB', coeff: 3.00 };
+    if (score >= 64) return { letter: 'CB', coeff: 2.50 };
+    if (score >= 57) return { letter: 'CC', coeff: 2.00 };
+    if (score >= 49) return { letter: 'DC', coeff: 1.50 };
+    if (score >= 39) return { letter: 'DD', coeff: 1.00 };
+    if (score >= 34) return { letter: 'FD', coeff: 0.50 };
+    return { letter: 'FF', coeff: 0.00 };
 }
 
 const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
@@ -167,14 +148,13 @@ function validateInput(el) {
 /**
  * Calculation Logic
  */
+
+
+/**
+ * Calculation Logic
+ */
 function getCoefficient(score) {
-    // Round score to 2 decimal places before calculation to match typical inputs
-    // But formulas are continuous, so exact value is better.
-    // Let's use the exact value or fixed to 2 decimals if that's standard.
-    // The user formulas are linear, so directly applying them is best.
-    const coeff = calculateCoefficient(score);
-    const letter = getLetterForCoeff(coeff);
-    return { coeff: coeff, letter: letter };
+    return getGradeFromScore(score);
 }
 
 function formatNeeded(s, baraj) {
@@ -226,13 +206,15 @@ function calculateStatus(vize, final, credit, settings) {
             // For AA (3.5+): 3.5 = (y-25)/16 => y = 3.5*16 + 25 = 56+25 = 81.
             // For BA (3.5): 81. For BB (3.0): (y-19)/18=3 => y=73.
             // This matches the boundary inputs exactly.
+            // Grade Targets
             const TARGETS = [
-                { l: 'AA', min: 81 },
-                { l: 'BA', min: 73 },
-                { l: 'BB', min: 64 },
-                { l: 'CB', min: 57 },
-                { l: 'CC', min: 49 },
-                { l: 'DC', min: 39 }
+                { l: 'AA', min: 88 },
+                { l: 'BA', min: 81 },
+                { l: 'BB', min: 73 },
+                { l: 'CB', min: 64 },
+                { l: 'CC', min: 57 },
+                { l: 'DC', min: 49 },
+                { l: 'DD', min: 39 }
             ];
 
             TARGETS.forEach(t => {
