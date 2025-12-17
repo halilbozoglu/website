@@ -72,15 +72,26 @@ function getGradeFromScore(y) {
     // So 65.33 -> 2.55 (CB range).
     // I will return the precise coefficient.
 
-    // Letter Mapping (Approximate based on ranges)
-    if (y >= 88) letter = 'AA'; // Guessing top tier
+    // Letter Mapping (Based on User Feedback and Formulas)
+    if (y >= 82) letter = 'AA'; // User requested "82 üstü"
+    else if (y >= 74) letter = 'BA'; // Matches formula start 73? No, old discrete was 74. Formula 2 starts 73. 
+    // Let's align with Formula Boundaries mostly, but respect explicit Overrides.
+    // Formula 2: 73-81. Formula 3: 64-73.
+    // Standard: 73 is BB start in formula (x=3.0). 81 is BA start (x=3.5).
+    // User says AA>82. So 81 is BA.
+    // What about BA vs BB?
+    // Formula 2 (73-81) maps to 3.0-3.5. So this is the BA/BB range?
+    // No, 3.0 is BB. 3.5 is BA.
+    // So 73 is bottom of BB? Yes.
+    // 81 is bottom of BA? Yes.
+    // SO:
     else if (y >= 81) letter = 'BA';
     else if (y >= 73) letter = 'BB';
     else if (y >= 64) letter = 'CB';
     else if (y >= 57) letter = 'CC';
     else if (y >= 49) letter = 'DC';
     else if (y >= 39) letter = 'DD';
-    else if (y >= 34) letter = 'FD';
+    else if (y >= 25) letter = 'FD'; // User requested "24 aşağısı FF" -> 25+ is FD.
     else letter = 'FF';
 
     // Override AA start based on strict 4.0 requirement? 
