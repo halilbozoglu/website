@@ -1,17 +1,62 @@
 /** 
  * Constants & Config 
  */
-const GRADE_SCALE = [
-    { min: 82, max: 100, coeff: 4.00, letter: 'AA' },
-    { min: 74, max: 81, coeff: 3.50, letter: 'BA' },
-    { min: 65, max: 73, coeff: 3.00, letter: 'BB' },
-    { min: 58, max: 64, coeff: 2.50, letter: 'CB' },
-    { min: 50, max: 57, coeff: 2.00, letter: 'CC' },
-    { min: 40, max: 49, coeff: 1.50, letter: 'DC' },
-    { min: 35, max: 39, coeff: 1.00, letter: 'DD' },
-    { min: 25, max: 34, coeff: 0.50, letter: 'FD' },
-    { min: 0, max: 24, coeff: 0.00, letter: 'FF' }
+const GRADE_SCALE = [];
+// Generate granular scale based on Konya Technical University / YÖK control points
+// Control Points derived from image: 4.00=100, 3.50=81, 3.00=73, 2.50=64, 2.00=57, 1.50=49, 1.00=39, 0.50=34, 0.00=0
+const CONTROL_POINTS = [
+    { score: 100, coeff: 4.00 },
+    { score: 81, coeff: 3.50 },
+    { score: 73, coeff: 3.00 },
+    { score: 64, coeff: 2.50 },
+    { score: 57, coeff: 2.00 },
+    { score: 49, coeff: 1.50 },
+    { score: 39, coeff: 1.00 },
+    { score: 34, coeff: 0.50 },
+    { score: 29, coeff: 0.00 } // Extrapolating 0.00 starts below 34, usually roughly here or just 0
 ];
+// Note: detailed table shows 0.50 is 34.00, below that is FF.
+// We will generate values for every 0.01 coefficient step between points.
+
+function generateScale() {
+    for (let i = 0; i < CONTROL_POINTS.length - 1; i++) {
+        const high = CONTROL_POINTS[i];
+        const low = CONTROL_POINTS[i + 1];
+
+        const scoreRange = high.score - low.score;
+        const coeffRange = high.coeff - low.coeff;
+        const steps = Math.round(coeffRange * 100); // e.g. 50 steps
+
+        for (let j = 0; j < steps; j++) {
+            const coeff = parseFloat((high.coeff - (j * 0.01)).toFixed(2));
+            // Linear interpolation for score
+            const score = high.score - ((j / steps) * scoreRange);
+            GRADE_SCALE.push({
+                min: parseFloat((score - (scoreRange / steps) + 0.001).toFixed(2)),
+                max: parseFloat(score.toFixed(2)),
+                coeff: coeff,
+                letter: getLetterForCoeff(coeff)
+            });
+        }
+    }
+    // Add FF range
+    GRADE_SCALE.push({ min: 0, max: 33.99, coeff: 0.00, letter: 'FF' });
+}
+
+function getLetterForCoeff(c) {
+    if (c >= 3.50) return 'AA'; // Adjustment: usually 4.0=AA, 3.5=BA. But granular might need generic fallback.
+    // Actually, let's keep the standard letters for display purposes based on the coefficient
+    if (c >= 4.00) return 'AA';
+    if (c >= 3.50) return 'BA';
+    if (c >= 3.00) return 'BB';
+    if (c >= 2.50) return 'CB';
+    if (c >= 2.00) return 'CC';
+    if (c >= 1.50) return 'DC';
+    if (c >= 1.00) return 'DD';
+    if (c >= 0.50) return 'FD';
+    return 'FF';
+}
+generateScale();
 const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
 
 // Default State
