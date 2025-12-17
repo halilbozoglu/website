@@ -239,7 +239,7 @@ function calculateStatus(vize, final, credit, settings) {
                 </details>`;
             }
         } else {
-            let avg = parseFloat(((v * mRatio) + (f * fRatio)).toFixed(2));
+            let avg = Math.round((v * mRatio) + (f * fRatio));
             // Final Threshold Check
             let status;
             let gInfo;
@@ -281,7 +281,7 @@ function updateSummary() {
             const fRatio = state.settings.finalRatio / 100;
             const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
 
-            let avg = parseFloat(((v * mRatio) + (effectiveFinal * fRatio)).toFixed(2));
+            let avg = Math.round((v * mRatio) + (effectiveFinal * fRatio));
             let gInfo;
 
             // Apply Final Threshold Logic to Summary
