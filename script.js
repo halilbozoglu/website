@@ -235,7 +235,7 @@ function parseOBS() {
         }
 
         if (newCourses.length > 0) {
-            state.courses = [...state.courses, ...newCourses];
+            state.courses = newCourses;
             saveState();
             closeModal();
         } else {
