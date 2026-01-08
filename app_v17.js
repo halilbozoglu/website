@@ -407,17 +407,27 @@ function parseOBS() {
             let vize = "";
             let final = "";
 
-            const vizeMatch = restOfBlock.match(/Vize\s+(\d+)/i);
-            if (vizeMatch) vize = vizeMatch[1];
-            else {
-                const gradeMatch = restOfBlock.match(/\b(\d{1,3})\b/);
-                // "2026" (Year) might be matched if close? 
-                // Using 1-3 digits. 
-                if (gradeMatch && parseInt(gradeMatch[1]) <= 100) vize = gradeMatch[1];
-            }
-
             const finalMatch = restOfBlock.match(/Final\s+(\d+)/i);
             if (finalMatch) final = finalMatch[1];
+
+            // Fix: User reports OBS gives "-1" for missing grades. Convert to "0".
+            // Since regex uses \d+, it shouldn't catch negative numbers unless we change regex
+            // or if the previous parsing logic was somehow capturing it?
+            // Actually, the regex `Vize\s+(\d+)` captures digits. It won't capture "-1".
+            // If the user says "-1", maybe the OBS text literally says "Vize -1"?
+            // We need to adjust regex to allow negative sign OR check if we are missing it.
+            // Let's assume the current regex MIGHT miss "-1" and return empty, or we need to look for it.
+            // Wait, \d+ does not match -1. So vize would be empty if it's "-1".
+            // Let's broaden regex to `(-?\d+)`.
+
+            const vizeMatchStrict = restOfBlock.match(/Vize\s+(-?\d+)/i);
+            if (vizeMatchStrict) vize = vizeMatchStrict[1];
+
+            const finalMatchStrict = restOfBlock.match(/Final\s+(-?\d+)/i);
+            if (finalMatchStrict) final = finalMatchStrict[1];
+
+            if (vize === "-1") vize = "0";
+            if (final === "-1") final = "0";
 
             newCourses.push({
                 id: Date.now() + Math.random(),
