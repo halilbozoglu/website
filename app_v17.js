@@ -37,7 +37,7 @@ function getGradeFromScore(y) {
         letter = 'BB';
         x = 3.00;
     } else if (y >= 58) {
-        letter = 'CB'; // Using CB (canonical) instead of BC
+        letter = 'BC'; // Changed from CB to BC per user request
         x = 2.50;
     } else if (y >= 50) {
         letter = 'CC';
@@ -161,7 +161,18 @@ function updateCourseData(id, field, value) {
         if (row) {
             const analysis = calculateStatus(course.vize, course.final, course.credit, state.settings);
             const resultCell = row.querySelector('.result-cell');
-            if (resultCell) resultCell.innerHTML = analysis;
+            if (resultCell) {
+                // Preserve details panel state
+                const details = resultCell.querySelector('details');
+                const wasOpen = details && details.hasAttribute('open');
+
+                resultCell.innerHTML = analysis;
+
+                if (wasOpen) {
+                    const newDetails = resultCell.querySelector('details');
+                    if (newDetails) newDetails.setAttribute('open', '');
+                }
+            }
             updateSummary();
         }
     }
@@ -249,7 +260,7 @@ function calculateStatus(vize, final, credit, settings) {
                 { l: 'AA', min: 82 },
                 { l: 'BA', min: 74 },
                 { l: 'BB', min: 65 },
-                { l: 'CB', min: 58 },
+                { l: 'BC', min: 58 },
                 { l: 'CC', min: 50 },
                 { l: 'DC', min: 40 },
                 { l: 'DD', min: 35 }
