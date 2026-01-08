@@ -325,7 +325,10 @@ function updateSummary() {
     let registeredCredits = 0;
 
     // Filter for Term Average: Only visible semester
-    const visibleCourses = state.courses.filter(c => c.semester === state.currentSemester);
+    // Filter for Term Average: Only visible semester
+    const visibleCourses = state.currentSemester === 'Genel'
+        ? state.courses
+        : state.courses.filter(c => c.semester === state.currentSemester);
 
     visibleCourses.forEach(c => {
         const credit = parseFloat(c.credit) || 0;
@@ -598,9 +601,11 @@ function render() {
     tbody.innerHTML = '';
 
     // Filter courses by current semester
-    // If 'Genel' (optional), maybe show all? But sticking to Tabs logic.
-    // If semester is 'Genel' and user manually added it, it acts like a normal semester.
-    const visibleCourses = state.courses.filter(c => c.semester === state.currentSemester);
+    // Filter courses by current semester
+    // If 'Genel', show all courses (View All mode)
+    const visibleCourses = state.currentSemester === 'Genel'
+        ? state.courses
+        : state.courses.filter(c => c.semester === state.currentSemester);
 
     visibleCourses.forEach((course) => {
         const analysisHtml = calculateStatus(course.vize, course.final, course.credit, state.settings);
