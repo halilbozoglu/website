@@ -376,7 +376,7 @@ function updateSummary() {
     document.getElementById('termAvg').innerText = termAvgScore.toFixed(2);
 
     // GANO (Cumulative) - Always calculate for ALL courses with credits
-    let totalPointsAll = 0;
+    let totalWeightedGpaPoints = 0;
     let totalCreditsAll = 0;
     state.courses.forEach(c => {
         const cr = parseFloat(c.credit) || 0;
@@ -390,17 +390,29 @@ function updateSummary() {
                 const effectiveFinal = isNaN(f) ? v : f;
                 const mRatio = state.settings.vizeRatio / 100;
                 const fRatio = state.settings.finalRatio / 100;
+                const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
+
                 let avg = (v * mRatio) + (effectiveFinal * fRatio);
-                totalPointsAll += (avg * cr);
+
+                // Get 4.0 coefficient for this specific course
+                let courseCoeffInfo = getCoefficient(avg);
+                let courseCoeff = courseCoeffInfo.coeff;
+
+                // Enforce Final Baraj for GANO calculation
+                // If final is below baraj, the course fails (FF = 0.00), regardless of average
+                if (effectiveFinal < finalBaraj) {
+                    courseCoeff = 0.00;
+                }
+
+                totalWeightedGpaPoints += (courseCoeff * cr);
                 totalCreditsAll += cr;
             }
         }
     });
 
-    let ganoScore = totalCreditsAll > 0 ? (totalPointsAll / totalCreditsAll) : 0;
-    let gpaInfo = getCoefficient(ganoScore);
+    let gpaValue = totalCreditsAll > 0 ? (totalWeightedGpaPoints / totalCreditsAll) : 0;
 
-    document.getElementById('gpaValue').innerText = gpaInfo.coeff.toFixed(2);
+    document.getElementById('gpaValue').innerText = gpaValue.toFixed(2);
 
     // Display Total Credits (Context Aware? Or Total?)
     // Let's show currently visible credits for 'Total Credit' context
