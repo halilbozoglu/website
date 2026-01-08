@@ -1,31 +1,22 @@
 /** 
  * Constants & Config 
  */
-// Formula-Based Coefficient Calculation
-// Based on user provided formulas specific to ranges
-// Formula-Based Coefficient Calculation (User Provided)
-// 81-100: (y+52)/38
-// 73-81: (y-25)/16
-// 64-73: (y-19)/18
-// 57-64: (y-29)/14
-// 49-57: (y-25)/16
-// 39-49: (y-19)/20
-// 34-39: (y-29)/10
-// 0-34: y/68
+// Official Grade Conversion Logic
+// Calculates letter grade and 4.0 coefficient based on 100-scale score.
 function getGradeFromScore(y) {
     let letter = 'FF';
     let x = 0.00;
 
-    // User Provided Discrete Ranges & Coefficients:
-    // 82-100 = AA = 4,00
-    // 74-81  = BA = 3,50
-    // 65-73  = BB = 3,00
-    // 58-64  = BC = 2,50
-    // 50-57  = CC = 2,00
-    // 40-49  = DC = 1,50
-    // 35-39  = DD = 1,00
-    // 25-34  = FD = 0,50
-    // 0-24   = FF = 0,00
+    // Official Grade Conversion Table (Agirlikli Genel Not Ortalamasi):
+    // 82 - 100 : 4.00 (AA)
+    // 74 - 81  : 3.50 (BA)
+    // 65 - 73  : 3.00 (BB)
+    // 58 - 64  : 2.50 (CB)
+    // 50 - 57  : 2.00 (CC)
+    // 40 - 49  : 1.50 (DC)
+    // 35 - 39  : 1.00 (DD)
+    // 25 - 34  : 0.50 (FD)
+    // 0  - 24  : 0.00 (FF)
 
     if (y >= 82) {
         letter = 'AA';
