@@ -70,7 +70,9 @@ let state = {
         condGrade: 40,
         finalThreshold: 35
     },
-    courses: []
+    courses: [],
+    currentSemester: 'Genel', // Default tab
+    semesters: ['Genel']
 };
 
 /**
@@ -133,7 +135,8 @@ function addCourse(save = true) {
         name: '',
         credit: '',
         vize: '',
-        final: ''
+        final: '',
+        semester: state.currentSemester // Assign current tab as semester
     });
     if (save) saveState();
 }
@@ -317,7 +320,10 @@ function updateSummary() {
     let gradedCredits = 0;
     let registeredCredits = 0;
 
-    state.courses.forEach(c => {
+    // Filter for Term Average: Only visible semester
+    const visibleCourses = state.courses.filter(c => c.semester === state.currentSemester);
+
+    visibleCourses.forEach(c => {
         const credit = parseFloat(c.credit) || 0;
         // Handle comma inputs for Turkish users
         let vVal = c.vize.toString().replace(',', '.');
@@ -361,8 +367,85 @@ function updateSummary() {
     let termGpaInfo = getCoefficient(termAvgScore);
 
     document.getElementById('termAvg').innerText = termAvgScore.toFixed(2);
-    document.getElementById('gpaValue').innerText = termGpaInfo.coeff.toFixed(2);
+
+    // GANO (Cumulative) - Always calculate for ALL courses with credits
+    let totalPointsAll = 0;
+    let totalCreditsAll = 0;
+    state.courses.forEach(c => {
+        const cr = parseFloat(c.credit) || 0;
+        if (cr > 0) {
+            let vVal = c.vize.toString().replace(',', '.');
+            let fVal = c.final.toString().replace(',', '.');
+            let v = vVal === "" ? NaN : parseFloat(vVal);
+            let f = fVal === "" ? NaN : parseFloat(fVal);
+
+            if (!isNaN(v)) {
+                const effectiveFinal = isNaN(f) ? v : f;
+                const mRatio = state.settings.vizeRatio / 100;
+                const fRatio = state.settings.finalRatio / 100;
+                let avg = (v * mRatio) + (effectiveFinal * fRatio);
+                totalPointsAll += (avg * cr);
+                totalCreditsAll += cr;
+            }
+        }
+    });
+
+    let ganoScore = totalCreditsAll > 0 ? (totalPointsAll / totalCreditsAll) : 0;
+    let gpaInfo = getCoefficient(ganoScore);
+
+    document.getElementById('gpaValue').innerText = gpaInfo.coeff.toFixed(2);
+
+    // Display Total Credits (Context Aware? Or Total?)
+    // Let's show currently visible credits for 'Total Credit' context
     document.getElementById('totalCredit').innerText = registeredCredits;
+}
+
+/**
+ * Sidebar Logic
+ */
+function renderSidebar() {
+    const sidebar = document.getElementById('semesterList');
+    if (!sidebar) return;
+
+    // Ensure semesters list is up to date based on courses
+    // Extract unique semesters from courses
+    const usedSemesters = new Set(state.courses.map(c => c.semester).filter(s => s));
+    usedSemesters.add('Genel'); // Always have 'Genel' (All) or should 'Genel' act as a catch-all?
+    // Let's treat 'Genel' as a specific tab or use it as "Show All"?
+    // User wants "separate tabs".
+    // Let's use `state.semesters` as the source of truth for ORDER.
+
+    // Re-sync state.semesters with used ones + keep existing order if possible
+    let newSemesters = [...state.semesters];
+    usedSemesters.forEach(s => {
+        if (!newSemesters.includes(s)) newSemesters.push(s);
+    });
+
+    state.semesters = newSemesters;
+
+    sidebar.innerHTML = '';
+
+    state.semesters.forEach(sem => {
+        const btn = document.createElement('button');
+        btn.className = `sidebar-item ${state.currentSemester === sem ? 'active' : ''}`;
+        btn.innerText = sem;
+        btn.onclick = () => {
+            state.currentSemester = sem;
+            saveState();
+            render(); // Re-render table and sidebar
+        };
+        sidebar.appendChild(btn);
+    });
+}
+
+function addNewSemester() {
+    const name = prompt("Dönem Adı (Örn: 2025-2026 Yaz):");
+    if (name && !state.semesters.includes(name)) {
+        state.semesters.push(name);
+        state.currentSemester = name;
+        saveState();
+        render();
+    }
 }
 
 // Helper for comma in live update
@@ -380,24 +463,41 @@ function parseOBS() {
 
     try {
         const normalized = text.replace(/\s+/g, ' ');
-        // Regex Lookahead (?=\d{7}|$) is risky if other numbers exist.
-        // Attempt to anchor to the table structure more reliably.
-        // Course Code (7 digits) ... Year (4 digits) ... Name ... Credit (1-2 digits) ...
-        // FIXED: Use \b to ensure we match specific 7-digit course codes and NOT 9-digit Student IDs
+
+        // Detect Semesters First
+        // Regex for Semester Header: YYYY-YYYY (Güz|Bahar) Dönemi
+        const semesterRegex = /(\d{4}-\d{4}\s+\w+\s+Dönemi)/g;
+        let semesterMatches = [];
+        let sMatch;
+        while ((sMatch = semesterRegex.exec(text)) !== null) {
+            semesterMatches.push({
+                name: sMatch[1],
+                index: sMatch.index
+            });
+        }
+
+        // Regex for courses (existing)
         const regex = /\b(\d{7})\b.*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\b\d{7}\b|$)/g;
 
         let match;
         let newCourses = [];
 
         while ((match = regex.exec(normalized)) !== null) {
+            const courseIndex = match.index;
+
+            // Determine Semester
+            let currentParsingSemester = "Genel";
+            if (semesterMatches.length > 0) {
+                // Find the last semester header that has index < courseIndex
+                const prevSem = semesterMatches.filter(s => s.index < courseIndex).pop();
+                if (prevSem) currentParsingSemester = prevSem.name;
+            }
+
             const courseCode = match[1];
-            // Filter out false positives like Student IDs matching 7 digits
-            // Real course codes usually start with specific digits but vary.
-            // Check if Name contains invalid keywords found in headers
+            // Filter out false positives
             const courseName = match[3].trim();
             const courseCredit = match[4];
 
-            // Fix: "Güz Dönemi Dönem Ortalaması" appearing as course
             if (courseName.includes("Dönem") || courseName.includes("Ortalama") || courseName.includes("Genel")) {
                 continue;
             }
@@ -407,25 +507,14 @@ function parseOBS() {
             let vize = "";
             let final = "";
 
-            const finalMatch = restOfBlock.match(/Final\s+(\d+)/i);
-            if (finalMatch) final = finalMatch[1];
-
-            // Fix: User reports OBS gives "-1" for missing grades. Convert to "0".
-            // Since regex uses \d+, it shouldn't catch negative numbers unless we change regex
-            // or if the previous parsing logic was somehow capturing it?
-            // Actually, the regex `Vize\s+(\d+)` captures digits. It won't capture "-1".
-            // If the user says "-1", maybe the OBS text literally says "Vize -1"?
-            // We need to adjust regex to allow negative sign OR check if we are missing it.
-            // Let's assume the current regex MIGHT miss "-1" and return empty, or we need to look for it.
-            // Wait, \d+ does not match -1. So vize would be empty if it's "-1".
-            // Let's broaden regex to `(-?\d+)`.
-
+            // Parse Vize and Final strictly, allowing for negative numbers
             const vizeMatchStrict = restOfBlock.match(/Vize\s+(-?\d+)/i);
             if (vizeMatchStrict) vize = vizeMatchStrict[1];
 
             const finalMatchStrict = restOfBlock.match(/Final\s+(-?\d+)/i);
             if (finalMatchStrict) final = finalMatchStrict[1];
 
+            // Convert -1 to 0 (Missing grade in OBS)
             if (vize === "-1") vize = "0";
             if (final === "-1") final = "0";
 
@@ -434,14 +523,21 @@ function parseOBS() {
                 name: courseName,
                 credit: courseCredit,
                 vize: vize,
-                final: final
+                final: final,
+                semester: currentParsingSemester
             });
         }
 
         if (newCourses.length > 0) {
             state.courses = newCourses;
+            // Update semesters list
+            const foundSemesters = [...new Set(newCourses.map(c => c.semester))];
+            state.semesters = foundSemesters;
+            if (state.semesters.length > 0) state.currentSemester = state.semesters[0]; // Default to first found
+
             saveState();
             closeModal();
+            render(); // Refresh all
         } else {
             alert("Veri bulunamadı. OBS tablonuzun formatı farklı olabilir.");
         }
@@ -454,10 +550,17 @@ function parseOBS() {
  * Rendering
  */
 function render() {
+    renderSidebar(); // Update sidebar
+
     const tbody = document.getElementById('courseTableBody');
     tbody.innerHTML = '';
 
-    state.courses.forEach((course) => {
+    // Filter courses by current semester
+    // If 'Genel' (optional), maybe show all? But sticking to Tabs logic.
+    // If semester is 'Genel' and user manually added it, it acts like a normal semester.
+    const visibleCourses = state.courses.filter(c => c.semester === state.currentSemester);
+
+    visibleCourses.forEach((course) => {
         const analysisHtml = calculateStatus(course.vize, course.final, course.credit, state.settings);
         const row = document.createElement('tr');
         row.setAttribute('data-id', course.id);

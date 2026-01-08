@@ -13,42 +13,53 @@
     <div class="container">
         <h1 class="page-title">KTÜN Not Hesaplayıcı</h1>
 
-        <div class="table-container">
-            <table id="gradeTable">
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">Ders Adı</th>
-                        <th style="width: 8%;">Kredi</th>
-                        <th style="width: 8%;">Vize</th>
-                        <th style="width: 8%;">Final</th>
-                        <th style="width: 46%;">Durum / Detaylı Hedef Analizi</th>
-                        <th style="width: 10%;">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody id="courseTableBody">
-                    <!-- Javascript ile doldurulacak -->
-                </tbody>
-            </table>
-            <div style="margin-top: 15px;">
-                <button class="btn btn-add" id="addCourseBtn">+ Ders Ekle</button>
-                <button class="btn btn-import" id="openObsModalBtn">OBS'den Yapıştır (Tüm Metni)</button>
-                <button class="btn btn-clear" id="resetBtn">Tümünü Sıfırla</button>
-            </div>
-        </div>
+        <div class="main-wrapper">
+            <aside class="sidebar" id="semesterSidebar">
+                <!-- Sidebar content injected by JS -->
+                <div class="sidebar-header">Dönemler</div>
+                <div id="semesterList"></div>
+                <button class="btn btn-sm btn-add-term" onclick="addNewSemester()">+ Yeni Dönem</button>
+            </aside>
 
-        <div class="summary-panel">
-            <div class="summary-card">
-                <h3>Dönem Ortalaması (100'lük)</h3>
-                <div class="summary-value" id="termAvg">0.00</div>
-            </div>
-            <div class="summary-card">
-                <h3>Genel Akademik Ort. (4.00)</h3>
-                <div class="summary-value" id="gpaValue">0.00</div>
-            </div>
-            <div class="summary-card">
-                <h3>Toplam Kredi</h3>
-                <div class="summary-value" id="totalCredit">0</div>
-            </div>
+            <main class="content">
+                <div class="table-container">
+                    <table id="gradeTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Ders Adı</th>
+                                <th style="width: 8%;">Kredi</th>
+                                <th style="width: 8%;">Vize</th>
+                                <th style="width: 8%;">Final</th>
+                                <th style="width: 46%;">Durum / Detaylı Hedef Analizi</th>
+                                <th style="width: 10%;">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTableBody">
+                            <!-- Javascript ile doldurulacak -->
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-add" id="addCourseBtn">+ Ders Ekle</button>
+                        <button class="btn btn-import" id="openObsModalBtn">OBS'den Yapıştır (Tüm Metni)</button>
+                        <button class="btn btn-clear" id="resetBtn">Tümünü Sıfırla</button>
+                    </div>
+                </div>
+
+                <div class="summary-panel">
+                    <div class="summary-card">
+                        <h3>Dönem Ortalaması (100'lük)</h3>
+                        <div class="summary-value" id="termAvg">0.00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Genel Akademik Ort. (4.00)</h3>
+                        <div class="summary-value" id="gpaValue">0.00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Toplam Kredi</h3>
+                        <div class="summary-value" id="totalCredit">0</div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
