@@ -149,6 +149,10 @@ function removeCourse(id) {
 function clearAll() {
     if (confirm('Tüm veriler silinecek. Emin misiniz?')) {
         state.courses = [];
+        // Reset semesters to default so sidebar hides
+        state.semesters = ['Genel'];
+        state.currentSemester = 'Genel';
+
         addCourse(false);
         saveState();
     }
@@ -404,26 +408,38 @@ function updateSummary() {
  * Sidebar Logic
  */
 function renderSidebar() {
-    const sidebar = document.getElementById('semesterList');
-    if (!sidebar) return;
+    // Correctly reference the sidebar container for visibility toggle
+    const sidebarContainer = document.getElementById('semesterSidebar');
+    const listContainer = document.getElementById('semesterList');
+
+    if (!sidebarContainer || !listContainer) return;
 
     // Ensure semesters list is up to date based on courses
-    // Extract unique semesters from courses
     const usedSemesters = new Set(state.courses.map(c => c.semester).filter(s => s));
-    usedSemesters.add('Genel'); // Always have 'Genel' (All) or should 'Genel' act as a catch-all?
-    // Let's treat 'Genel' as a specific tab or use it as "Show All"?
-    // User wants "separate tabs".
-    // Let's use `state.semesters` as the source of truth for ORDER.
+    usedSemesters.add('Genel');
 
     // Re-sync state.semesters with used ones + keep existing order if possible
     let newSemesters = [...state.semesters];
     usedSemesters.forEach(s => {
         if (!newSemesters.includes(s)) newSemesters.push(s);
     });
+    // Filter out semesters that no longer exist (except Genel)
+    // Actually, if a user deleted all courses in a semester, should the tab disappear? Not necessarily.
+    // Keeping existing behavior: accumulating.
 
     state.semesters = newSemesters;
 
-    sidebar.innerHTML = '';
+    // VISIBILITY CHECK: Hide if only 'Genel' exists
+    const isDefaultOnly = state.semesters.length === 1 && state.semesters[0] === 'Genel';
+
+    if (isDefaultOnly) {
+        sidebarContainer.style.display = 'none';
+        // Expand content? CSS Flex should handle it if sidebar is display:none
+    } else {
+        sidebarContainer.style.display = 'block';
+    }
+
+    listContainer.innerHTML = '';
 
     state.semesters.forEach(sem => {
         const btn = document.createElement('button');
@@ -434,7 +450,7 @@ function renderSidebar() {
             saveState();
             render(); // Re-render table and sidebar
         };
-        sidebar.appendChild(btn);
+        listContainer.appendChild(btn);
     });
 }
 
