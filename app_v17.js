@@ -20,7 +20,7 @@ function getGradeFromScore(y) {
     // 82-100 = AA = 4,00
     // 74-81  = BA = 3,50
     // 65-73  = BB = 3,00
-    // 58-64  = CB = 2,50
+    // 58-64  = BC = 2,50
     // 50-57  = CC = 2,00
     // 40-49  = DC = 1,50
     // 35-39  = DD = 1,00
@@ -462,14 +462,18 @@ function parseOBS() {
     if (!text.trim()) return;
 
     try {
+        // Normalize whitespace to single spaces
         const normalized = text.replace(/\s+/g, ' ');
 
         // Detect Semesters First
-        // Regex for Semester Header: YYYY-YYYY (Güz|Bahar) Dönemi
-        const semesterRegex = /(\d{4}-\d{4}\s+\w+\s+Dönemi)/g;
+        // EXECUTE REGEX ON NORMALIZED TEXT, NOT RAW TEXT
+        // Regex for Semester Header: YYYY-YYYY (Güz|Bahar|Yaz) Dönemi
+        // Broadened to catch "2023-2024 Akademik Yılı Güz Dönemi" if needed, but usually it's simpler.
+        const semesterRegex = /(\d{4}-\d{4}\s+.*?\s+Dönemi)/gi;
+
         let semesterMatches = [];
         let sMatch;
-        while ((sMatch = semesterRegex.exec(text)) !== null) {
+        while ((sMatch = semesterRegex.exec(normalized)) !== null) {
             semesterMatches.push({
                 name: sMatch[1],
                 index: sMatch.index
@@ -477,6 +481,7 @@ function parseOBS() {
         }
 
         // Regex for courses (existing)
+        // Ensure \b is used correctly.
         const regex = /\b(\d{7})\b.*?(20\d\d)\s+(.+?)\s+(\d{1,2})\s+(.*?)(?=\b\d{7}\b|$)/g;
 
         let match;
@@ -486,11 +491,17 @@ function parseOBS() {
             const courseIndex = match.index;
 
             // Determine Semester
+            // Logic: Find the latest header that is BEFORE this course.
             let currentParsingSemester = "Genel";
+
             if (semesterMatches.length > 0) {
-                // Find the last semester header that has index < courseIndex
-                const prevSem = semesterMatches.filter(s => s.index < courseIndex).pop();
-                if (prevSem) currentParsingSemester = prevSem.name;
+                // strict < courseIndex check
+                const precedingSemesters = semesterMatches.filter(s => s.index < courseIndex);
+                if (precedingSemesters.length > 0) {
+                    // The last one in the list is the closest one before the course
+                    const prevSem = precedingSemesters[precedingSemesters.length - 1];
+                    currentParsingSemester = prevSem.name;
+                }
             }
 
             const courseCode = match[1];
@@ -532,8 +543,9 @@ function parseOBS() {
             state.courses = newCourses;
             // Update semesters list
             const foundSemesters = [...new Set(newCourses.map(c => c.semester))];
+
             state.semesters = foundSemesters;
-            if (state.semesters.length > 0) state.currentSemester = state.semesters[0]; // Default to first found
+            if (state.semesters.length > 0) state.currentSemester = state.semesters[0];
 
             saveState();
             closeModal();
