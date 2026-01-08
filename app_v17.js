@@ -296,7 +296,8 @@ function calculateStatus(vize, final, credit, settings) {
                 gInfo = { coeff: 0.00, letter: 'FF' }; // Automatic FF if below baraj
             } else {
                 status = avg >= pLimit ? ["GEÇTİ", "status-pass"] : (avg >= cLimit ? ["ŞARTLI", "status-cond"] : ["KALDI", "status-fail"]);
-                gInfo = getCoefficient(avg);
+                // Use rounded average for letter grade determination
+                gInfo = getCoefficient(Math.round(avg));
             }
 
             // Display: Round average for UI display? User said "Sonucu virgülden sonra 2 basamak".
@@ -386,7 +387,8 @@ function updateSummary() {
                 let avg = (v * mRatio) + (effectiveFinal * fRatio);
 
                 // Get 4.0 coefficient for this specific course
-                let courseCoeffInfo = getCoefficient(avg);
+                // Round the average to nearest integer before looking up the grade
+                let courseCoeffInfo = getCoefficient(Math.round(avg));
                 let courseCoeff = courseCoeffInfo.coeff;
 
                 // Enforce Final Baraj for GANO calculation
