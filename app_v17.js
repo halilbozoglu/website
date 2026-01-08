@@ -379,7 +379,11 @@ function updateSummary() {
             let f = fVal === "" ? NaN : parseFloat(fVal);
 
             if (!isNaN(v)) {
-                const effectiveFinal = isNaN(f) ? v : f;
+                // For GANO (Official), we MUST exclude incomplete courses (Missing Final)
+                // If Final is NaN (empty), skip this course.
+                if (isNaN(f)) return;
+
+                const effectiveFinal = f;
                 const mRatio = state.settings.vizeRatio / 100;
                 const fRatio = state.settings.finalRatio / 100;
                 const finalBaraj = state.settings.finalThreshold !== undefined ? state.settings.finalThreshold : 35;
