@@ -37,7 +37,7 @@ function getGradeFromScore(y) {
         letter = 'BB';
         x = 3.00;
     } else if (y >= 58) {
-        letter = 'BC'; // Changed from CB to BC per user request
+        letter = 'CB';
         x = 2.50;
     } else if (y >= 50) {
         letter = 'CC';
@@ -267,7 +267,7 @@ function calculateStatus(vize, final, credit, settings) {
                 { l: 'AA', min: 82 },
                 { l: 'BA', min: 74 },
                 { l: 'BB', min: 65 },
-                { l: 'BC', min: 58 },
+                { l: 'CB', min: 58 },
                 { l: 'CC', min: 50 },
                 { l: 'DC', min: 40 },
                 { l: 'DD', min: 35 }
