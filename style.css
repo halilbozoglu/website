@@ -551,3 +551,27 @@ details.target-details summary:hover {
 details.target-details[open] summary {
     margin-bottom: 10px;
 }
+/* --- GitHub Support Link --- */
+.github-support {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    color: var(--text-muted);
+    transition: color 0.3s ease, transform 0.3s ease;
+    background-color: var(--card-bg);
+    border-radius: 50%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.github-support:hover {
+    color: var(--accent);
+    transform: scale(1.1);
+    border-color: var(--accent);
+    box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
+}
