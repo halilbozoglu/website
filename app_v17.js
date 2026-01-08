@@ -13,92 +13,50 @@
 // 34-39: (y-29)/10
 // 0-34: y/68
 function getGradeFromScore(y) {
-    let x = 0;
-    // Strict ranges based on user request:
-    // 1. [81.00 <= y <= 100.00] -> x = (y + 52) / 38
-    if (y >= 81) {
-        x = (y + 52) / 38;
-    }
-    // 2. [73.00 <= y < 81.00] -> x = (y - 25) / 16
-    else if (y >= 73) {
-        x = (y - 25) / 16;
-    }
-    // 3. [64.00 <= y < 73.00] -> x = (y - 19) / 18
-    else if (y >= 64) {
-        x = (y - 19) / 18;
-    }
-    // 4. [57.00 <= y < 64.00] -> x = (y - 29) / 14
-    else if (y >= 57) {
-        x = (y - 29) / 14;
-    }
-    // 5. [49.00 <= y < 57.00] -> x = (y - 25) / 16
-    else if (y >= 49) {
-        x = (y - 25) / 16;
-    }
-    // 6. [39.00 <= y < 49.00] -> x = (y - 19) / 20
-    else if (y >= 39) {
-        x = (y - 19) / 20;
-    }
-    // 7. [34.00 <= y < 39.00] -> x = (y - 29) / 10
-    else if (y >= 34) {
-        x = (y - 29) / 10;
-    }
-    // 8. [0.00 <= y < 34.00] -> x = y / 68
-    else {
-        x = y / 68;
-    }
-
-    // Cap at 4.00 and floor at 0.00
-    if (x > 4) x = 4;
-    if (x < 0) x = 0;
-
-    // Determine Letter based on Coefficient (Standard Intervals)
-    // 4.00 AA, 3.50 BA, 3.00 BB, 2.50 CB, 2.00 CC, 1.50 DC, 1.00 DD, 0.50 FD
     let letter = 'FF';
-    if (x >= 3.75) letter = 'AA'; // Approximation for display? Or use ranges?
-    // Better to use the score ranges for Letter determination to match the start points.
-    // 81->3.5 (BA). 100->4.0 (AA).
-    // Let's use the explicit score ranges for Letter to avoid float ambiguity.
-    if (y >= 81) letter = 'AA'; // Wait, 81 gives 3.5 which is BA.
-    // User formula: 81 is bottom of top range. (81+52)/38 = 3.5. 
-    // IF result is 3.5, is it AA or BA? Standard: 4.0=AA, 3.5=BA.
-    // So 81 is BA. But range goes up to 100 (4.0).
-    // Where does AA start? Usually 4.0. Or 3.75+? 
-    // Previous "Mutlak" AA was 82.
-    // Let's stick to the Coefficients.
-    // We will return the precise Coeff.
-    // For Letter, let's just use standard discrete checks for display?
-    // USER REQUESTED: "65,33 ortalamaya 2,78 yazıyor... bu denkleme göre yazınca 2,55 çıkıyor"
-    // So 65.33 -> 2.55 (CB range).
-    // I will return the precise coefficient.
+    let x = 0.00;
 
-    // Letter Mapping (Based on User Feedback and Formulas)
-    if (y >= 82) letter = 'AA'; // User requested "82 üstü"
-    else if (y >= 74) letter = 'BA'; // Matches formula start 73? No, old discrete was 74. Formula 2 starts 73. 
-    // Let's align with Formula Boundaries mostly, but respect explicit Overrides.
-    // Formula 2: 73-81. Formula 3: 64-73.
-    // Standard: 73 is BB start in formula (x=3.0). 81 is BA start (x=3.5).
-    // User says AA>82. So 81 is BA.
-    // What about BA vs BB?
-    // Formula 2 (73-81) maps to 3.0-3.5. So this is the BA/BB range?
-    // No, 3.0 is BB. 3.5 is BA.
-    // So 73 is bottom of BB? Yes.
-    // 81 is bottom of BA? Yes.
-    // SO:
-    else if (y >= 81) letter = 'BA';
-    else if (y >= 73) letter = 'BB';
-    else if (y >= 64) letter = 'CB';
-    else if (y >= 57) letter = 'CC';
-    else if (y >= 49) letter = 'DC';
-    else if (y >= 39) letter = 'DD';
-    else if (y >= 25) letter = 'FD'; // User requested "24 aşağısı FF" -> 25+ is FD.
-    else letter = 'FF';
+    // User Provided Discrete Ranges & Coefficients:
+    // 82-100 = AA = 4,00
+    // 74-81  = BA = 3,50
+    // 65-73  = BB = 3,00
+    // 58-64  = CB = 2,50
+    // 50-57  = CC = 2,00
+    // 40-49  = DC = 1,50
+    // 35-39  = DD = 1,00
+    // 25-34  = FD = 0,50
+    // 0-24   = FF = 0,00
 
-    // Override AA start based on strict 4.0 requirement? 
-    // If coeff > 3.75 maybe?
-    // Let's keep it simple.
+    if (y >= 82) {
+        letter = 'AA';
+        x = 4.00;
+    } else if (y >= 74) {
+        letter = 'BA';
+        x = 3.50;
+    } else if (y >= 65) {
+        letter = 'BB';
+        x = 3.00;
+    } else if (y >= 58) {
+        letter = 'CB'; // Using CB (canonical) instead of BC
+        x = 2.50;
+    } else if (y >= 50) {
+        letter = 'CC';
+        x = 2.00;
+    } else if (y >= 40) {
+        letter = 'DC';
+        x = 1.50;
+    } else if (y >= 35) {
+        letter = 'DD';
+        x = 1.00;
+    } else if (y >= 25) {
+        letter = 'FD';
+        x = 0.50;
+    } else {
+        letter = 'FF';
+        x = 0.00;
+    }
 
-    return { letter: letter, coeff: parseFloat(x.toFixed(2)) };
+    return { letter: letter, coeff: x };
 }
 
 const TARGET_LETTERS = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC'];
@@ -288,13 +246,13 @@ function calculateStatus(vize, final, credit, settings) {
             // This matches the boundary inputs exactly.
             // Grade Targets (Based on start of formula ranges)
             const TARGETS = [
-                { l: 'AA', min: 88 }, // Est.
-                { l: 'BA', min: 81 },
-                { l: 'BB', min: 73 },
-                { l: 'CB', min: 64 },
-                { l: 'CC', min: 57 },
-                { l: 'DC', min: 49 },
-                { l: 'DD', min: 39 }
+                { l: 'AA', min: 82 },
+                { l: 'BA', min: 74 },
+                { l: 'BB', min: 65 },
+                { l: 'CB', min: 58 },
+                { l: 'CC', min: 50 },
+                { l: 'DC', min: 40 },
+                { l: 'DD', min: 35 }
             ];
 
             TARGETS.forEach(t => {
