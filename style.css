@@ -22,12 +22,14 @@ body {
     background-color: var(--bg-color);
     color: var(--text-main);
     font-family: var(--font-family);
-    padding: 20px;
+    padding: 10px;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
 }
 
@@ -71,9 +73,7 @@ body {
     /* Smaller padding when collapsed */
 }
 
-.settings-toggle-btn {
-    /* renamed or just keep .btn-toggle? Keeping .btn-toggle to avoid html change */
-}
+
 
 .btn-toggle {
     position: absolute;
@@ -551,6 +551,7 @@ details.target-details summary:hover {
 details.target-details[open] summary {
     margin-bottom: 10px;
 }
+
 /* --- GitHub Support Link --- */
 .github-support {
     position: fixed;
@@ -566,7 +567,7 @@ details.target-details[open] summary {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .github-support:hover {
@@ -598,7 +599,8 @@ details.target-details[open] summary {
 
 .content {
     flex-grow: 1;
-    min-width: 0; /* Prevent flex overflow */
+    min-width: 0;
+    /* Prevent flex overflow */
 }
 
 .sidebar-header {
@@ -658,7 +660,7 @@ details.target-details[open] summary {
     .main-wrapper {
         flex-direction: column;
     }
-    
+
     .sidebar {
         width: 100%;
         position: static;
@@ -669,18 +671,19 @@ details.target-details[open] summary {
         align-items: center;
         gap: 10px;
     }
-    
+
     .sidebar-header {
-        display: none; /* Hide header on mobile to save space */
+        display: none;
+        /* Hide header on mobile to save space */
     }
-    
+
     .sidebar-item {
         width: auto;
         white-space: nowrap;
         margin: 0;
         flex-shrink: 0;
     }
-    
+
     .btn-add-term {
         width: auto;
         margin: 0;

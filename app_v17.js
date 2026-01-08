@@ -558,10 +558,24 @@ function parseOBS() {
         if (newCourses.length > 0) {
             state.courses = newCourses;
             // Update semesters list
-            const foundSemesters = [...new Set(newCourses.map(c => c.semester))];
+            let foundSemesters = [...new Set(newCourses.map(c => c.semester))];
+
+            // Ensure Genel is always first
+            if (foundSemesters.includes('Genel')) {
+                foundSemesters = foundSemesters.filter(s => s !== 'Genel');
+            }
+            foundSemesters.unshift('Genel');
 
             state.semesters = foundSemesters;
-            if (state.semesters.length > 0) state.currentSemester = state.semesters[0];
+            if (state.semesters.length > 0) {
+                // If we have multiple semesters and the first is Genel (which might be empty),
+                // select the second one (the actual imported semester).
+                if (state.semesters.length > 1 && state.semesters[0] === 'Genel') {
+                    state.currentSemester = state.semesters[1];
+                } else {
+                    state.currentSemester = state.semesters[0];
+                }
+            }
 
             saveState();
             closeModal();
