@@ -407,7 +407,27 @@ function updateSummary() {
         }
     });
 
-    let gpaValue = totalCreditsAll > 0 ? (totalWeightedGpaPoints / totalCreditsAll) : 0;
+    // Display Logic: Toggle visibility based on context
+    const termAvgCard = document.getElementById('termAvg').parentElement;
+    const ganoCard = document.getElementById('gpaValue').parentElement;
+
+    if (state.currentSemester === 'Genel') {
+        // In 'Genel' mode, show only GANO (which represents the overall average)
+        termAvgCard.style.display = 'none';
+        ganoCard.style.display = 'block';
+    } else {
+        // In Semester mode, show only Term Average
+        termAvgCard.style.display = 'block';
+        ganoCard.style.display = 'none';
+
+        // Ensure Term Avg ignores incomplete courses too? 
+        // User said "dönemlere sadece dönem ortalamasını". The current calculation for termAvgScore
+        // already sums weighted points. We should arguably apply the same 'incomplete exclusion' logic 
+        // to termAvg if we want consistency, OR keep it as 'preview'.
+        // User didn't complain about term avg logic, just the GANO. 
+        // AND the user explicitly said "dönemlere sadece dönem ortalamasını... yaz".
+        // I will stick to just toggling visibility here.
+    }
 
     document.getElementById('gpaValue').innerText = gpaValue.toFixed(2);
 
