@@ -367,10 +367,12 @@ function updateSummary() {
 
     document.getElementById('termAvg').innerText = termAvgScore.toFixed(2);
 
-    // GANO (Cumulative) - Always calculate for ALL courses with credits
+    // GANO (Cumulative) / Term GPA (Contextual)
+    // Now calculated based on VISIBLE courses only defined by user request ("sadece o dönemi kapsasın")
     let totalWeightedGpaPoints = 0;
     let totalCreditsAll = 0;
-    state.courses.forEach(c => {
+
+    visibleCourses.forEach(c => {
         const cr = parseFloat(c.credit) || 0;
         if (cr > 0) {
             let vVal = c.vize.toString().replace(',', '.');
@@ -379,8 +381,7 @@ function updateSummary() {
             let f = fVal === "" ? NaN : parseFloat(fVal);
 
             if (!isNaN(v)) {
-                // For GANO (Official), we MUST exclude incomplete courses (Missing Final)
-                // If Final is NaN (empty), skip this course.
+                // For GANO/Term GPA, exclude incomplete courses
                 if (isNaN(f)) return;
 
                 const effectiveFinal = f;
@@ -390,13 +391,10 @@ function updateSummary() {
 
                 let avg = (v * mRatio) + (effectiveFinal * fRatio);
 
-                // Get 4.0 coefficient for this specific course
-                // Round the average to nearest integer before looking up the grade
+                // Get 4.0 coefficient 
                 let courseCoeffInfo = getCoefficient(Math.round(avg));
                 let courseCoeff = courseCoeffInfo.coeff;
 
-                // Enforce Final Baraj for GANO calculation
-                // If final is below baraj, the course fails (FF = 0.00), regardless of average
                 if (effectiveFinal < finalBaraj) {
                     courseCoeff = 0.00;
                 }
@@ -410,6 +408,16 @@ function updateSummary() {
     let gpaValue = totalCreditsAll > 0 ? (totalWeightedGpaPoints / totalCreditsAll) : 0;
 
     document.getElementById('gpaValue').innerText = gpaValue.toFixed(2);
+
+    // Dynamic Title Logic
+    const gpaHeader = document.getElementById('gpaValue').previousElementSibling;
+    if (gpaHeader && gpaHeader.tagName === 'H3') {
+        if (state.currentSemester === 'Genel') {
+            gpaHeader.innerText = "Genel Dönem Ortalaması";
+        } else {
+            gpaHeader.innerText = "Dönem Ortalaması (4.00)";
+        }
+    }
 
     // Display Total Credits (Context Aware? Or Total?)
     // Let's show currently visible credits for 'Total Credit' context
