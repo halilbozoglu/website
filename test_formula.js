@@ -1,30 +1,190 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 
-function getGradeFromScore(y) {
-    let x = 0;
-    if (y >= 81) {
-        x = (y + 52) / 38;
-    } else if (y >= 73) {
-        x = (y - 25) / 16;
-    } else if (y >= 64) {
-        x = (y - 19) / 18;
-    } else if (y >= 57) {
-        x = (y - 29) / 14;
-    } else if (y >= 49) {
-        x = (y - 25) / 16;
-    } else if (y >= 39) {
-        x = (y - 19) / 20;
-    } else if (y >= 34) {
-        x = (y - 29) / 10;
-    } else {
-        x = y / 68;
-    }
+const {
+    DEFAULT_SETTINGS_2026,
+    resolveEffectiveMode,
+    getGradeFromScore,
+    computeAllStats,
+    calculateStatus,
+    parseOBSText,
+    formatNeeded
+} = require('./app_v18.js');
 
-    if (x > 4) x = 4;
-    if (x < 0) x = 0;
+// 1. 2026-2027 Harf Notu ve Katsayi Tablo Sinirlari (Md. 15/7)
+const boundaryCases2026 = [
+    [100, 'AA', 'A', 4.00],
+    [90, 'AA', 'A', 4.00],
+    [89, 'BA', 'B', 3.50],
+    [82, 'BA', 'B', 3.50],
+    [81, 'BB', 'C', 3.00],
+    [75, 'BB', 'C', 3.00],
+    [74, 'CB', 'D', 2.50],
+    [67, 'CB', 'D', 2.50],
+    [66, 'CC', 'E', 2.00],
+    [60, 'CC', 'E', 2.00],
+    [59, 'DC', 'FX', 1.50],
+    [50, 'DC', 'FX', 1.50],
+    [49, 'DD', 'FX', 1.00],
+    [45, 'DD', 'FX', 1.00],
+    [44, 'FF', 'F', 0.00],
+    [0, 'FF', 'F', 0.00]
+];
 
-    return parseFloat(x.toFixed(2));
+boundaryCases2026.forEach(([score, letter, ects, coeff]) => {
+    const res = getGradeFromScore(score, 'new');
+    assert.strictEqual(res.letter, letter, `Score ${score} letter mismatch`);
+    assert.strictEqual(res.ects, ects, `Score ${score} ECTS mismatch`);
+    assert.strictEqual(res.coeff, coeff, `Score ${score} coeff mismatch`);
+});
+
+// 2. Yuvarlama Sinirlari
+assert.strictEqual(getGradeFromScore(89.5, 'new').letter, 'AA');
+assert.strictEqual(getGradeFromScore(89.4, 'new').letter, 'BA');
+assert.strictEqual(getGradeFromScore(59.5, 'new').letter, 'CC');
+assert.strictEqual(getGradeFromScore(59.4, 'new').letter, 'DC');
+assert.strictEqual(getGradeFromScore(44.5, 'new').letter, 'DD');
+assert.strictEqual(getGradeFromScore(44.4, 'new').letter, 'FF');
+
+// 3. Final Baraji (< 35 -> FF / 0.00 / KALDI Baraj)
+{
+    const sem = '2026-2027 Güz Dönemi';
+    const courses = [
+        { id: 1, name: 'Baraj Dersi', credit: 5, vize: '100', final: '34', semester: sem }
+    ];
+    const stats = computeAllStats(courses, DEFAULT_SETTINGS_2026, 'new');
+    assert.strictEqual(stats.bySemester[sem].yano, 0);
+    assert.strictEqual(stats.bySemester[sem].hasFailed, true);
+
+    const html = calculateStatus(courses[0], stats, DEFAULT_SETTINGS_2026, 'new');
+    assert(html.includes('FF'), 'Baraj failure must display FF');
+    assert(html.includes('KALDI'), 'Baraj failure must display KALDI');
+    assert(html.includes('Baraj'), 'Baraj failure must mention Baraj');
 }
 
-console.log("68 -> " + getGradeFromScore(68));
-console.log("64.72 -> " + getGradeFromScore(64.72));
-console.log("Verification of 2.54 reverse: " + (2.54 * 18 + 19));
+// 4. Dinamik YANO >= 2.50 ile DC/DD Gecme ve < 2.50 ile Kalma
+{
+    const sem = '2026-2027 Güz Dönemi';
+    // Senaryo A: Yuksek ders (AA 4.0 * 10 = 40) + DC (1.5 * 5 = 7.5) + DD (1.0 * 5 = 5) => 52.5 / 20 = 2.625 >= 2.50
+    const passCourses = [
+        { id: 1, name: 'Ana Ders', credit: 10, vize: '95', final: '95', semester: sem }, // AA (4.00)
+        { id: 2, name: 'DC Ders', credit: 5, vize: '55', final: '55', semester: sem },   // DC (1.50)
+        { id: 3, name: 'DD Ders', credit: 5, vize: '46', final: '46', semester: sem }    // DD (1.00)
+    ];
+    const statsPass = computeAllStats(passCourses, DEFAULT_SETTINGS_2026, 'new');
+    assert(statsPass.bySemester[sem].yano >= 2.50, 'Expected YANO >= 2.50');
+    assert.strictEqual(statsPass.bySemester[sem].dcDdPassed, true);
+    assert.strictEqual(statsPass.bySemester[sem].hasFailed, false);
+
+    const dcPassHtml = calculateStatus(passCourses[1], statsPass, DEFAULT_SETTINGS_2026, 'new');
+    const ddPassHtml = calculateStatus(passCourses[2], statsPass, DEFAULT_SETTINGS_2026, 'new');
+    assert(dcPassHtml.includes('GEÇTİ'), 'DC should pass when YANO >= 2.50');
+    assert(ddPassHtml.includes('GEÇTİ'), 'DD should pass when YANO >= 2.50');
+
+    // Senaryo B: Orta ders (CB 2.5 * 5 = 12.5) + DC (1.5 * 5 = 7.5) + DD (1.0 * 5 = 5) => 25 / 15 = 1.67 < 2.50
+    const failCourses = [
+        { id: 1, name: 'Orta Ders', credit: 5, vize: '70', final: '70', semester: sem }, // CB (2.50)
+        { id: 2, name: 'DC Ders', credit: 5, vize: '55', final: '55', semester: sem },   // DC (1.50)
+        { id: 3, name: 'DD Ders', credit: 5, vize: '46', final: '46', semester: sem }    // DD (1.00)
+    ];
+    const statsFail = computeAllStats(failCourses, DEFAULT_SETTINGS_2026, 'new');
+    assert(statsFail.bySemester[sem].yano < 2.50, 'Expected YANO < 2.50');
+    assert.strictEqual(statsFail.bySemester[sem].dcDdPassed, false);
+    assert.strictEqual(statsFail.bySemester[sem].hasFailed, true);
+
+    const dcFailHtml = calculateStatus(failCourses[1], statsFail, DEFAULT_SETTINGS_2026, 'new');
+    const ddFailHtml = calculateStatus(failCourses[2], statsFail, DEFAULT_SETTINGS_2026, 'new');
+    assert(dcFailHtml.includes('KALDI'), 'DC should fail when YANO < 2.50');
+    assert(ddFailHtml.includes('KALDI'), 'DD should fail when YANO < 2.50');
+}
+
+// 5. Auto Mod Cozumleme ve Gercek OBS Verisi Dogrulamasi (test_obs_complex.js)
+assert.strictEqual(resolveEffectiveMode('2024-2025 Güz Dönemi', 'auto'), 'legacy');
+assert.strictEqual(resolveEffectiveMode('2025-2026 Güz Dönemi', 'auto'), 'legacy');
+assert.strictEqual(resolveEffectiveMode('2026-2027 Güz Dönemi', 'auto'), 'new');
+assert.strictEqual(resolveEffectiveMode('2024-2025 Güz Dönemi', 'new'), 'new');
+
+{
+    const complexFile = fs.readFileSync(path.join(__dirname, 'test_obs_complex.js'), 'utf8');
+    const textMatch = complexFile.match(/const text = `([\s\S]*?)`;/);
+    assert(textMatch, 'Could not read sample OBS text from test_obs_complex.js');
+
+    const parsed = parseOBSText(textMatch[1]);
+    assert.strictEqual(parsed.courses.length, 21, 'Expected 21 parsed courses from test_obs_complex.js');
+    assert.strictEqual(parsed.hasLegacySemesters, true, 'Expected legacy semesters detected');
+    assert.deepStrictEqual(parsed.semesters, [
+        'Genel',
+        '2024-2025 Güz Dönemi',
+        '2024-2025 Bahar Dönemi',
+        '2025-2026 Güz Dönemi'
+    ]);
+
+    // 2025-2026 Guz derslerinde Final yok; Vize var
+    const guz2526 = parsed.courses.filter(c => c.semester === '2025-2026 Güz Dönemi');
+    assert.strictEqual(guz2526.length, 8);
+    assert.strictEqual(guz2526[0].final, '');
+
+    // Auto modda 2024-2025 Guz -> 3.03, 2024-2025 Bahar -> 2.70, GANO -> 2.87 (OBS ile birebir)
+    const obsStats = computeAllStats(parsed.courses, DEFAULT_SETTINGS_2026, 'auto');
+    assert.strictEqual(obsStats.bySemester['2024-2025 Güz Dönemi'].yano.toFixed(2), '3.03');
+    assert.strictEqual(obsStats.bySemester['2024-2025 Bahar Dönemi'].yano.toFixed(2), '2.70');
+    assert.strictEqual(obsStats.overall.gano.toFixed(2), '2.87');
+}
+
+// 6. OBS Ayristirma: -1 -> 0 ve Butunleme Notunun Final Yerine Gecmesi
+{
+    const sampleWithBut = `
+2026-2027 Güz Dönemi
+1202301 2027 Devre Analizi I 5 Vize -1 Final 25 Büt 68 41 DC Başarılı
+1202302 2027 Fizik I 4 Vize 50 Final -1 30 FF Başarısız
+`;
+    const parsed = parseOBSText(sampleWithBut);
+    assert.strictEqual(parsed.courses.length, 2);
+    assert.strictEqual(parsed.courses[0].vize, '0');
+    assert.strictEqual(parsed.courses[0].final, '68');
+    assert.strictEqual(parsed.courses[1].final, '0');
+    assert.strictEqual(parsed.hasLegacySemesters, false);
+}
+
+// 7. 45 AKTS Siniri ve GANO >= 3.00 Ustten Ders Uygunlugu (Md. 11)
+{
+    const sem = '2026-2027 Güz Dönemi';
+    const heavyCourses = [
+        { id: 1, name: 'D1', credit: 25, vize: '92', final: '92', semester: sem },
+        { id: 2, name: 'D2', credit: 22, vize: '90', final: '90', semester: sem }
+    ];
+    const heavyStats = computeAllStats(heavyCourses, DEFAULT_SETTINGS_2026, 'new');
+    assert.strictEqual(heavyStats.bySemester[sem].registeredAkts, 47);
+    assert.strictEqual(heavyStats.bySemester[sem].aktsExceeded, true);
+    assert.strictEqual(heavyStats.overall.upperYearEligible, true);
+
+    // Basarisiz ders varsa GANO >= 3.00 olsa bile ustten ders alamaz
+    const withFail = [
+        { id: 1, name: 'D1', credit: 30, vize: '95', final: '95', semester: sem }, // AA (4.0)
+        { id: 2, name: 'D2', credit: 3, vize: '30', final: '30', semester: sem }   // FF (0.0)
+    ];
+    const withFailStats = computeAllStats(withFail, DEFAULT_SETTINGS_2026, 'new');
+    assert(withFailStats.overall.gano >= 3.00);
+    assert.strictEqual(withFailStats.overall.anyFailed, true);
+    assert.strictEqual(withFailStats.overall.upperYearEligible, false);
+}
+
+// 8. Tahmin Modu ve formatNeeded
+assert.strictEqual(formatNeeded(20, 35), '35 (Baraj)');
+assert.strictEqual(formatNeeded(73.2, 35), '74');
+assert.strictEqual(formatNeeded(101, 35), '>100');
+{
+    const sem = '2026-2027 Güz Dönemi';
+    const predCourse = { id: 1, name: 'Elektronik', credit: 5, vize: '50', final: '', semester: sem };
+    const predStats = computeAllStats([predCourse], DEFAULT_SETTINGS_2026, 'new');
+    const predHtml = calculateStatus(predCourse, predStats, DEFAULT_SETTINGS_2026, 'new');
+    // CC=60 => (60 - 20)/0.6 = 66.67 => 67
+    assert(predHtml.includes('67'), 'Expected needed CC score 67 in prediction HTML');
+    // DC=50 => (50 - 20)/0.6 = 50
+    assert(predHtml.includes('50'), 'Expected needed DC score 50 in prediction HTML');
+    // DD=45 => (45 - 20)/0.6 = 41.67 => 42
+    assert(predHtml.includes('42'), 'Expected needed DD score 42 in prediction HTML');
+}
+
+console.log('ALL TESTS PASSED SUCCESSFULLY');

@@ -4,117 +4,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mühendislik Not Hesaplayıcı (V10 - Final)</title>
-    <link rel="stylesheet" href="style.css">
+    <title>KTÜN Not Hesaplayıcı | 2026-2027 Güncel Yönetmelik</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=18">
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('ktunTheme');
+                if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) { }
+        })();
+    </script>
 </head>
 
 <body>
-
-    <div class="container">
-        <h1 class="page-title">KTÜN Not Hesaplayıcı</h1>
-
-        <div class="main-wrapper">
-            <aside class="sidebar" id="semesterSidebar">
-                <!-- Sidebar content injected by JS -->
-                <div class="sidebar-header">Dönemler</div>
-                <div id="semesterList"></div>
-                <button class="btn btn-sm btn-add-term" onclick="addNewSemester()">+ Yeni Dönem</button>
-            </aside>
-
-            <main class="content">
-                <div class="table-container">
-                    <table id="gradeTable">
-                        <thead>
-                            <tr>
-                                <th style="width: 20%;">Ders Adı</th>
-                                <th style="width: 8%;">Kredi</th>
-                                <th style="width: 8%;">Vize</th>
-                                <th style="width: 8%;">Final</th>
-                                <th style="width: 46%;">Durum / Detaylı Hedef Analizi</th>
-                                <th style="width: 10%;">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody id="courseTableBody">
-                            <!-- Javascript ile doldurulacak -->
-                        </tbody>
-                    </table>
-                    <div style="margin-top: 15px;">
-                        <button class="btn btn-add" id="addCourseBtn">+ Ders Ekle</button>
-                        <button class="btn btn-import" id="openObsModalBtn">OBS'den Yapıştır (Tüm Metni)</button>
-                        <button class="btn btn-clear" id="resetBtn">Tümünü Sıfırla</button>
-                    </div>
-                </div>
-
-                <div class="summary-panel">
-                    <div class="summary-card">
-                        <h3>Dönem Ortalaması (100'lük)</h3>
-                        <div class="summary-value" id="termAvg">0.00</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3>Genel Akademik Ort. (4.00)</h3>
-                        <div class="summary-value" id="gpaValue">0.00</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3>Toplam Kredi</h3>
-                        <div class="summary-value" id="totalCredit">0</div>
-                    </div>
-                </div>
-            </main>
+    <!-- 1. Üst Kurumsal Şerit (#202020) -->
+    <div class="ktun-topbar">
+        <div class="shell topbar-inner">
+            <div class="topbar-left">
+                <span class="topbar-motto">“Gelişimin Öncüsü”</span>
+                <span class="topbar-reg-badge">10.07.2026 Yönetmeliği</span>
+            </div>
+            <nav class="topbar-right" aria-label="Kurumsal bağlantılar">
+                <a href="https://www.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">ktun.edu.tr</a>
+                <a href="https://obsogrenci.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">OBS</a>
+                <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer">Resmî Gazete</a>
+                <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
+            </nav>
         </div>
     </div>
 
-    <header class="settings-panel collapsed" style="margin-top: 25px; margin-bottom: 0;">
-        <div class="save-indicator" id="saveMsg">Otomatik Kaydedildi ✓</div>
-        <button class="btn-toggle" id="toggleSettings">Ayarları Göster ▲</button>
+    <!-- 2. Ana KTÜN Kırmızı Navbar (#b52525) -->
+    <header class="ktun-navbar">
+        <div class="shell navbar-inner">
+            <div class="brand-group">
+                <div class="brand-emblem" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" width="46" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="32,3 52,11 61,32 52,53 32,61 12,53 3,32 12,11" fill="#2f0303" stroke="#ffffff" stroke-width="2.2" />
+                        <polygon points="32,8 49,15 56,32 49,49 32,56 15,49 8,32 15,15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+                        <rect x="20" y="20" width="24" height="24" transform="rotate(45 32 32)" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1" />
+                        <text x="32" y="34" text-anchor="middle" fill="#ffffff" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="13.5" letter-spacing="0.5">KTÜN</text>
+                        <text x="32" y="47" text-anchor="middle" fill="#f7d7d7" font-family="JetBrains Mono, monospace" font-weight="700" font-size="8.5" letter-spacing="0.8">1970</text>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1 class="brand-title">KTÜN Not Hesaplayıcı</h1>
+                    <p class="brand-subtitle">Konya Teknik Üniversitesi · Önlisans ve Lisans</p>
+                </div>
+            </div>
 
-        <div id="settingsContent" class="settings-content">
-            <div class="input-group">
-                <label>Vize Etki Oranı (%)</label>
-                <input type="number" id="vizeRatio" value="40" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label>Final Etki Oranı (%)</label>
-                <input type="number" id="finalRatio" value="60" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label>Normal Geçme Notu</label>
-                <input type="number" id="passGrade" value="50">
-            </div>
-            <div class="input-group">
-                <label>Şartlı Geçme Notu</label>
-                <input type="number" id="condGrade" value="40">
-            </div>
-            <div class="input-group">
-                <label>Final Barajı</label>
-                <input type="number" id="finalThreshold" value="35">
+            <div class="navbar-actions">
+                <button type="button" class="btn btn-nav-outline" id="openRegModalBtn">
+                    Yönetmelik &amp; Not Tablosu
+                </button>
+                <button type="button" class="btn btn-nav-solid" id="openObsModalBtn">
+                    OBS'den İçe Aktar
+                </button>
             </div>
         </div>
     </header>
 
-    <div class="modal-overlay" id="obsModal">
+    <!-- 3. Mimari Hero Şeridi -->
+    <section class="ktun-hero">
+        <div class="hero-pattern" aria-hidden="true"></div>
+        <div class="shell hero-inner">
+            <div class="hero-left">
+                <div class="hero-kicker">2026-2027 Eğitim-Öğretim Yılı Güncel Sistemi</div>
+                <h2 class="hero-title" id="activeSemesterTitle">Aktif Dönem Not Hesaplama</h2>
+                <div class="yano-rule-pill pill-neutral" id="yanoRulePill">
+                    Yeni Yönetmelik: DC/DD için Dönem YANO ≥ 2.50
+                </div>
+            </div>
+
+            <div class="hero-right">
+                <span class="reg-switch-label">Yönetmelik Modu</span>
+                <div class="reg-segmented" role="group" aria-label="Yönetmelik Modu">
+                    <button type="button" class="reg-seg-btn active" data-reg-mode="new" aria-pressed="true">2026-2027 Yeni</button>
+                    <button type="button" class="reg-seg-btn" data-reg-mode="auto" aria-pressed="false">Döneme Göre Oto</button>
+                    <button type="button" class="reg-seg-btn" data-reg-mode="legacy" aria-pressed="false">Eski Sistem</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="shell">
+            <div class="legacy-hint-banner" id="legacyHintBanner" style="display: none;">
+                <span>2026 öncesi dönemler tespit edildi. Eski ve yeni dönemleri kendi yönetmeliğine göre hesaplamak için <strong>Döneme Göre Oto</strong> moduna geçebilirsiniz.</span>
+                <div class="legacy-hint-actions">
+                    <button type="button" class="btn btn-hint-action" id="switchToAutoBtn">Otomatik Moda Geç</button>
+                    <button type="button" class="btn btn-hint-close" id="dismissLegacyHintBtn" aria-label="Uyarıyı kapat">✕</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Ana Çalışma Alanı -->
+    <div class="shell container">
+        <div class="main-wrapper">
+            <aside class="sidebar" id="semesterSidebar">
+                <div class="sidebar-header">Dönemler</div>
+                <div id="semesterList"></div>
+                <button type="button" class="btn btn-sm btn-add-term" onclick="addNewSemester()">+ Yeni Dönem</button>
+            </aside>
+
+            <main class="content">
+                <!-- 4 KPI Özet Kartı -->
+                <div class="summary-panel">
+                    <div class="summary-card">
+                        <h3>Dönem Ortalaması (100'lük)</h3>
+                        <div class="summary-value mono" id="termAvg">0.00</div>
+                        <div class="kpi-badge kpi-neutral">Vize %40 · Final %60 önizleme</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h3>YANO (Dönem 4.00)</h3>
+                        <div class="summary-value mono" id="gpaValue">0.00</div>
+                        <div class="kpi-badge kpi-neutral" id="yanoBadge">DC/DD için ≥ 2.50 gerekir</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h3>GANO (Genel 4.00)</h3>
+                        <div class="summary-value mono" id="ganoValue">0.00</div>
+                        <div class="kpi-badge kpi-neutral" id="ganoBadge">Üstten ders için GANO ≥ 3.00</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h3>AKTS Yükü</h3>
+                        <div class="summary-value mono" id="totalCredit">0</div>
+                        <div class="akts-progress-track">
+                            <div class="akts-progress-fill" id="aktsBar" style="width: 0%;"></div>
+                        </div>
+                        <div class="kpi-badge kpi-neutral" id="aktsBadge">0 / 45 AKTS yarıyıl sınırı</div>
+                    </div>
+                </div>
+
+                <!-- Ders Tablosu Kartı -->
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div class="toolbar-title-group">
+                            <h2 class="section-heading">Dersler ve Not Analizi</h2>
+                            <span class="toolbar-sub">Notları girin; YANO, GANO ve DC/DD durumu anında güncellenir.</span>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn btn-add" id="addCourseBtn">+ Ders Ekle</button>
+                            <button type="button" class="btn btn-import" id="tableObsImportBtn">OBS'den Yapıştır</button>
+                            <button type="button" class="btn btn-clear" id="resetBtn">Tümünü Sıfırla</button>
+                        </div>
+                    </div>
+
+                    <div class="table-scroll">
+                        <table id="gradeTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 24%;">Ders Adı</th>
+                                    <th style="width: 9%;">AKTS</th>
+                                    <th style="width: 9%;">Vize</th>
+                                    <th style="width: 9%;">Final</th>
+                                    <th style="width: 41%;">Durum / Detaylı Hedef Analizi</th>
+                                    <th style="width: 8%;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courseTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Açılır-Kapanır Gelişmiş Ayarlar Paneli -->
+                <section class="settings-panel collapsed" id="settingsPanel">
+                    <div class="save-indicator" id="saveMsg">Otomatik Kaydedildi ✓</div>
+                    <button type="button" class="btn-toggle" id="toggleSettings">Gelişmiş Ayarları Göster ▲</button>
+
+                    <div id="settingsContent" class="settings-content">
+                        <div class="input-group">
+                            <label for="vizeRatio">Vize Etki Oranı (%)</label>
+                            <input type="number" id="vizeRatio" value="40" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="finalRatio">Final Etki Oranı (%)</label>
+                            <input type="number" id="finalRatio" value="60" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="passGrade">Normal Geçme Notu (CC)</label>
+                            <input type="number" id="passGrade" value="60" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="condGrade">Şartlı Taban Notu (DD)</label>
+                            <input type="number" id="condGrade" value="45" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="finalThreshold">Final Barajı</label>
+                            <input type="number" id="finalThreshold" value="35" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="condYanoThreshold">Şartlı YANO Barajı</label>
+                            <input type="number" id="condYanoThreshold" value="2.50" step="0.05" min="0" max="4">
+                        </div>
+                        <div class="settings-footer-actions">
+                            <button type="button" class="btn btn-clear" id="resetSettingsBtn">Varsayılana Sıfırla</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal 1: OBS Veri İçe Aktar -->
+    <div class="modal-overlay" id="obsModal" role="dialog" aria-modal="true" aria-labelledby="obsModalTitle">
         <div class="modal">
-            <h2>Veri İçe Aktar</h2>
+            <div class="modal-header">
+                <h2 id="obsModalTitle">OBS'den Not Aktar</h2>
+                <button type="button" class="modal-close-btn" onclick="closeModal()" aria-label="Kapat">✕</button>
+            </div>
             <p class="modal-info">
-                OBS sayfasını açın, tüm metni seçin (Ctrl+A), kopyalayın (Ctrl+C) ve buraya yapıştırın.
+                OBS <strong>Not Durumu</strong> sayfasını açın, tüm sayfayı seçip (<code>Ctrl+A</code>) kopyalayın (<code>Ctrl+C</code>) ve aşağıya yapıştırın. Dönemler, ders kredileri, vize/final ve varsa bütünleme notları otomatik ayrıştırılır.
             </p>
-            <textarea id="obsInput" placeholder="Ctrl+V ile yapıştırın..."></textarea>
-            <div style="text-align: right;">
-                <button class="btn btn-clear" onclick="closeModal()">İptal</button>
-                <button class="btn btn-add" onclick="parseOBS()">Verileri İşle</button>
+            <textarea id="obsInput" placeholder="OBS sayfasından kopyaladığınız metni Ctrl+V ile buraya yapıştırın..."></textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-clear" onclick="closeModal()">İptal</button>
+                <button type="button" class="btn btn-add" onclick="parseOBS()">Verileri İşle</button>
             </div>
         </div>
     </div>
 
-    <a href="https://github.com/halilbozoglu/website" target="_blank" class="github-support" title="Projeye Destek Ol">
-        <svg height="32" viewBox="0 0 16 16" version="1.1" width="32" aria-hidden="true">
-            <path fill="currentColor"
-                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
-            </path>
-        </svg>
-    </a>
+    <!-- Modal 2: 2026-2027 Yönetmelik & Not Dönüşüm Tablosu -->
+    <div class="modal-overlay" id="regulationModal" role="dialog" aria-modal="true" aria-labelledby="regModalTitle">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="regModalTitle">KTÜN 2026-2027 Not Yönetmeliği Özeti</h2>
+                <button type="button" class="modal-close-btn" id="closeRegModalBtn" aria-label="Kapat">✕</button>
+            </div>
+            <p class="modal-info">
+                <strong>10 Temmuz 2026 tarihli ve 33306 sayılı Resmî Gazete</strong> ile değiştirilen Konya Teknik Üniversitesi Önlisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği esasları:
+            </p>
 
-    <script src="app_v17.js"></script>
+            <div class="reg-table-wrap">
+                <table class="reg-table">
+                    <thead>
+                        <tr>
+                            <th>Not Aralığı</th>
+                            <th>Harf Notu</th>
+                            <th>ECTS</th>
+                            <th>Katsayı</th>
+                            <th>Başarı Durumu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="mono">90 – 100</td><td><strong>AA</strong></td><td>A</td><td class="mono">4.00</td><td><span class="status-badge badge-pass">Başarılı</span></td></tr>
+                        <tr><td class="mono">82 – 89</td><td><strong>BA</strong></td><td>B</td><td class="mono">3.50</td><td><span class="status-badge badge-pass">Başarılı</span></td></tr>
+                        <tr><td class="mono">75 – 81</td><td><strong>BB</strong></td><td>C</td><td class="mono">3.00</td><td><span class="status-badge badge-pass">Başarılı</span></td></tr>
+                        <tr><td class="mono">67 – 74</td><td><strong>CB</strong></td><td>D</td><td class="mono">2.50</td><td><span class="status-badge badge-pass">Başarılı</span></td></tr>
+                        <tr><td class="mono">60 – 66</td><td><strong>CC</strong></td><td>E</td><td class="mono">2.00</td><td><span class="status-badge badge-pass">Başarılı</span></td></tr>
+                        <tr><td class="mono">50 – 59</td><td><strong>DC</strong></td><td>FX</td><td class="mono">1.50</td><td><span class="status-badge badge-cond">Şartlı (YANO ≥ 2.50 ise Geçer)</span></td></tr>
+                        <tr><td class="mono">45 – 49</td><td><strong>DD</strong></td><td>FX</td><td class="mono">1.00</td><td><span class="status-badge badge-cond">Şartlı (YANO ≥ 2.50 ise Geçer)</span></td></tr>
+                        <tr><td class="mono">0 – 44</td><td><strong>FF</strong></td><td>F</td><td class="mono">0.00</td><td><span class="status-badge badge-fail">Başarısız</span></td></tr>
+                        <tr><td class="mono">0</td><td><strong>F</strong></td><td>F</td><td class="mono">0.00</td><td><span class="status-badge badge-fail">Devamsız / Uygulamadan Başarısız</span></td></tr>
+                        <tr><td class="mono">45 – 100</td><td><strong>G</strong></td><td>-</td><td class="mono">-</td><td>Kredisiz derste veya stajda başarılı</td></tr>
+                        <tr><td class="mono">0 – 44</td><td><strong>K</strong></td><td>-</td><td class="mono">-</td><td>Kredisiz derste veya stajda başarısız</td></tr>
+                    </tbody>
+                </table>
+            </div>
 
+            <ul class="reg-rules-list">
+                <li><strong>DC / DD Şartlı Geçer Kuralı:</strong> Eski 6 derslik şartlı geçer hakkı kaldırılmıştır. Dersin bulunduğu yarıyılın <strong>YANO'su (dönem ortalaması) ≥ 2.50</strong> ise o dönemdeki tüm DC ve DD dersleri üst sınır olmadan otomatik geçer; 2.50'nin altındaysa başarısız sayılır.</li>
+                <li><strong>Katkı Oranları &amp; Baraj:</strong> Yarıyıl içi %40, genel/bütünleme sınavı %60 etkilidir. Genel/bütünleme sınavından <strong>en az 35</strong> alamayan öğrencinin notu doğrudan FF olur.</li>
+                <li><strong>Faaliyet Katkı Sınırı:</strong> Ödev, kısa sınav, proje, laboratuvar vb. faaliyetlerin ara sınav ve final puanına katkısı %50'yi aşamaz.</li>
+                <li><strong>AKTS &amp; Üstten Ders Alma:</strong> Bir yarıyılda stajlar hariç en fazla <strong>45 AKTS</strong> ders alınabilir. Alttan başarısız dersi olmayan ve <strong>GANO ≥ 3.00</strong> olan öğrenciler yıllık 90 AKTS sınırıyla üst yıldan ders alabilir.</li>
+                <li><strong>Not Yükseltme:</strong> Önceki yarıyıllarda <strong>BB harf notundan düşük</strong> alınan dersler not yükseltmek amacıyla tekrar alınabilir; en son alınan not geçerlidir.</li>
+            </ul>
+
+            <div class="reg-links">
+                <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer" class="btn btn-import">Resmî Gazete Tam Metin ↗</a>
+                <a href="https://www.ktun.edu.tr/tr/Birim/DuyuruDetay/yOnetmelIk_deGISIklIGI_hakkinda_(2026_2027_eGItIm_8536" target="_blank" rel="noopener noreferrer" class="btn btn-clear">KTÜN Şartlı Geçer Duyurusu ↗</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Kurumsal Alt Bilgi (#202020) -->
+    <footer class="ktun-footer">
+        <div class="shell footer-inner">
+            <div class="footer-left">
+                <strong>KTÜN Not Hesaplayıcı</strong> · 10.07.2026 tarihli ve 33306 sayılı Resmî Gazete değişikliğine göre güncellenmiştir. Resmî işlem ve mezuniyet hesaplamalarında KTÜN OBS kayıtları esas alınır.
+            </div>
+            <div class="footer-right">
+                <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub Kaynak Kodu ↗</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app_v18.js"></script>
 </body>
 
 </html>
