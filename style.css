@@ -103,86 +103,7 @@ body {
     padding: 0 20px;
 }
 
-/* --- 1. Üst Kurumsal Şerit (#202020) --- */
-.ktun-topbar {
-    background-color: var(--ktun-bar-dark);
-    color: #e2e5ea;
-    font-size: 0.8rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.topbar-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 38px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    flex-wrap: wrap;
-}
-
-.topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.topbar-motto {
-    font-style: italic;
-    font-weight: 600;
-    color: #ffffff;
-    letter-spacing: 0.2px;
-}
-
-.topbar-reg-badge {
-    background: rgba(181, 37, 37, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffdada;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-}
-
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-}
-
-.topbar-right a {
-    color: #d0d5dd;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.15s ease;
-}
-
-.topbar-right a:hover {
-    color: #ffffff;
-    text-decoration: underline;
-}
-
-.theme-toggle-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 6px;
-    padding: 3px 10px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.theme-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-/* --- 2. Ana KTÜN Kırmızı Navbar (#b52525) --- */
+/* --- 1. Ana KTÜN Kırmızı Navbar (#b52525) --- */
 .ktun-navbar {
     background-color: var(--ktun-red);
     color: #ffffff;
@@ -205,15 +126,6 @@ body {
 .brand-group {
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-.brand-emblem {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
 .brand-title {
@@ -235,6 +147,10 @@ body {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+.theme-toggle-btn {
+    white-space: nowrap;
 }
 
 .btn {
@@ -1223,11 +1139,6 @@ details.target-details summary {
         padding: 0 12px;
     }
 
-    .topbar-inner {
-        justify-content: center;
-        text-align: center;
-    }
-
     .navbar-inner {
         flex-direction: column;
         align-items: flex-start;
@@ -1238,7 +1149,8 @@ details.target-details summary {
     }
 
     .navbar-actions .btn {
-        flex: 1;
+        flex: 1 1 auto;
+        white-space: nowrap;
     }
 
     .hero-right {

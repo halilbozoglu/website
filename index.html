@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="style.css?v=19">
     <script>
         (function () {
             try {
@@ -20,36 +20,10 @@
 </head>
 
 <body>
-    <!-- 1. Üst Kurumsal Şerit (#202020) -->
-    <div class="ktun-topbar">
-        <div class="shell topbar-inner">
-            <div class="topbar-left">
-                <span class="topbar-motto">“Gelişimin Öncüsü”</span>
-                <span class="topbar-reg-badge">10.07.2026 Yönetmeliği</span>
-            </div>
-            <nav class="topbar-right" aria-label="Kurumsal bağlantılar">
-                <a href="https://www.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">ktun.edu.tr</a>
-                <a href="https://obsogrenci.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">OBS</a>
-                <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer">Resmî Gazete</a>
-                <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub</a>
-                <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
-            </nav>
-        </div>
-    </div>
-
-    <!-- 2. Ana KTÜN Kırmızı Navbar (#b52525) -->
+    <!-- 1. Ana KTÜN Kırmızı Navbar (#b52525) -->
     <header class="ktun-navbar">
         <div class="shell navbar-inner">
             <div class="brand-group">
-                <div class="brand-emblem" aria-hidden="true">
-                    <svg viewBox="0 0 64 64" width="46" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <polygon points="32,3 52,11 61,32 52,53 32,61 12,53 3,32 12,11" fill="#2f0303" stroke="#ffffff" stroke-width="2.2" />
-                        <polygon points="32,8 49,15 56,32 49,49 32,56 15,49 8,32 15,15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-                        <rect x="20" y="20" width="24" height="24" transform="rotate(45 32 32)" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1" />
-                        <text x="32" y="34" text-anchor="middle" fill="#ffffff" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="13.5" letter-spacing="0.5">KTÜN</text>
-                        <text x="32" y="47" text-anchor="middle" fill="#f7d7d7" font-family="JetBrains Mono, monospace" font-weight="700" font-size="8.5" letter-spacing="0.8">1970</text>
-                    </svg>
-                </div>
                 <div class="brand-text">
                     <h1 class="brand-title">KTÜN Not Hesaplayıcı</h1>
                     <p class="brand-subtitle">Konya Teknik Üniversitesi · Önlisans ve Lisans</p>
@@ -57,6 +31,7 @@
             </div>
 
             <div class="navbar-actions">
+                <button type="button" class="btn btn-nav-outline theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
                 <button type="button" class="btn btn-nav-outline" id="openRegModalBtn">
                     Yönetmelik &amp; Not Tablosu
                 </button>
