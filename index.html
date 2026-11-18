@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=20">
     <script>
         (function () {
             try {
@@ -20,7 +20,21 @@
 </head>
 
 <body>
-    <!-- 1. Ana KTÜN Kırmızı Navbar (#b52525) -->
+    <!-- 1. Üst Hızlı Bağlantı Şeridi (#202020) -->
+    <div class="ktun-topbar">
+        <div class="shell topbar-inner">
+            <nav class="topbar-right" aria-label="Kurumsal bağlantılar">
+                <a href="https://www.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">ktun.edu.tr</a>
+                <a href="https://obsogrenci.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">OBS</a>
+                <a href="https://lms.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">LMS</a>
+                <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer">Resmî Gazete</a>
+                <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 2. Ana KTÜN Kırmızı Navbar (#b52525) -->
     <header class="ktun-navbar">
         <div class="shell navbar-inner">
             <div class="brand-group">
@@ -31,7 +45,6 @@
             </div>
 
             <div class="navbar-actions">
-                <button type="button" class="btn btn-nav-outline theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
                 <button type="button" class="btn btn-nav-outline" id="openRegModalBtn">
                     Yönetmelik &amp; Not Tablosu
                 </button>

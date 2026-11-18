@@ -103,7 +103,64 @@ body {
     padding: 0 20px;
 }
 
-/* --- 1. Ana KTÜN Kırmızı Navbar (#b52525) --- */
+/* --- 1. Üst Hızlı Bağlantı Şeridi (#202020) --- */
+.ktun-topbar {
+    background-color: var(--ktun-bar-dark);
+    color: #e2e5ea;
+    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    min-height: 38px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.topbar-right a {
+    color: #d0d5dd;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.topbar-right a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* --- 2. Ana KTÜN Kırmızı Navbar (#b52525) --- */
 .ktun-navbar {
     background-color: var(--ktun-red);
     color: #ffffff;
@@ -147,10 +204,6 @@ body {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-}
-
-.theme-toggle-btn {
-    white-space: nowrap;
 }
 
 .btn {
@@ -1137,6 +1190,15 @@ details.target-details summary {
 @media screen and (max-width: 768px) {
     .shell {
         padding: 0 12px;
+    }
+
+    .topbar-inner {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .topbar-right {
+        justify-content: center;
     }
 
     .navbar-inner {
