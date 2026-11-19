@@ -12,7 +12,8 @@ const {
     formatNeeded,
     isGradeHidden,
     round2,
-    sanitizeCourseIds
+    sanitizeCourseIds,
+    removeSemesterFromState
 } = require('./app_v18.js');
 
 // 1. 2026-2027 Harf Notu ve Katsayi Tablo Sinirlari (Md. 15/7)
@@ -308,6 +309,38 @@ assert.strictEqual(formatNeeded(101, 35), '>100');
     assert.strictEqual(p.courses.length, 1);
     assert.strictEqual(p.courses[0].vize, '65,5');
     assert.strictEqual(p.courses[0].final, '70,5');
+}
+
+// 14. Donem Silme ve Oneri/Hata Bildirimi Dogrulamasi
+{
+    const mockState = {
+        semesters: ['Genel', '2025-2026 Güz Dönemi', '2026-2027 Güz Dönemi'],
+        currentSemester: '2025-2026 Güz Dönemi',
+        courses: [
+            { id: 1, name: 'Ders 1', credit: '5', vize: '70', final: '70', semester: '2025-2026 Güz Dönemi' },
+            { id: 2, name: 'Ders 2', credit: '4', vize: '80', final: '80', semester: '2026-2027 Güz Dönemi' }
+        ]
+    };
+
+    // Genel silinemez
+    assert.strictEqual(removeSemesterFromState(mockState, 'Genel'), false);
+
+    // 2025-2026 Guz silinince dersleri kalkar, kalan doneme gecer
+    assert.strictEqual(removeSemesterFromState(mockState, '2025-2026 Güz Dönemi'), true);
+    assert.deepStrictEqual(mockState.semesters, ['Genel', '2026-2027 Güz Dönemi']);
+    assert.strictEqual(mockState.courses.length, 1);
+    assert.strictEqual(mockState.currentSemester, '2026-2027 Güz Dönemi');
+
+    // Son gercek donem de silinince Genel'e doner
+    assert.strictEqual(removeSemesterFromState(mockState, '2026-2027 Güz Dönemi'), true);
+    assert.deepStrictEqual(mockState.semesters, ['Genel']);
+    assert.strictEqual(mockState.courses.length, 0);
+    assert.strictEqual(mockState.currentSemester, 'Genel');
+
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert(indexHtml.includes('Öneri &amp; Hata Bildirimi'), 'index.html must include feedback title');
+    assert(indexHtml.includes('bozogluhalil087@gmail.com'), 'index.html must include feedback email');
+    assert(indexHtml.includes('style.css?v=23') && indexHtml.includes('app_v18.js?v=4'), 'Asset versions must be updated');
 }
 
 console.log('ALL TESTS PASSED SUCCESSFULLY');

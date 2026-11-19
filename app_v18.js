@@ -1037,6 +1037,31 @@ function updateSummary(stats) {
     }
 }
 
+function removeSemesterFromState(targetState, semName) {
+    if (!semName || semName === 'Genel') return false;
+    targetState.courses = (targetState.courses || []).filter(c => (c.semester || 'Genel') !== semName);
+    targetState.semesters = (targetState.semesters || []).filter(s => s !== semName);
+    if (targetState.semesters.length === 0) {
+        targetState.semesters = ['Genel'];
+    }
+    if (targetState.currentSemester === semName || !targetState.semesters.includes(targetState.currentSemester)) {
+        targetState.currentSemester = targetState.semesters.length > 1 ? targetState.semesters[1] : 'Genel';
+    }
+    return true;
+}
+
+function deleteSemester(semName) {
+    if (!semName || semName === 'Genel') return;
+    if (!confirm(`"${semName}" dönemi ve bu döneme ait tüm dersler silinecek. Emin misiniz?`)) return;
+
+    removeSemesterFromState(state, semName);
+    if (state.courses.length === 0) {
+        state.currentSemester = 'Genel';
+        addCourse(false);
+    }
+    saveState();
+}
+
 function renderSidebar() {
     const sidebarContainer = document.getElementById('semesterSidebar');
     const listContainer = document.getElementById('semesterList');
@@ -1059,15 +1084,35 @@ function renderSidebar() {
 
     listContainer.innerHTML = '';
     state.semesters.forEach(sem => {
+        const isActive = state.currentSemester === sem;
+        const row = document.createElement('div');
+        row.className = `sidebar-item-row ${isActive ? 'active' : ''}`;
+
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `sidebar-item ${state.currentSemester === sem ? 'active' : ''}`;
+        btn.className = `sidebar-item ${isActive ? 'active' : ''}`;
         btn.textContent = sem;
         btn.onclick = () => {
             state.currentSemester = sem;
             saveState();
         };
-        listContainer.appendChild(btn);
+        row.appendChild(btn);
+
+        if (sem !== 'Genel') {
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'sidebar-del-btn';
+            delBtn.title = `${sem} dönemini sil`;
+            delBtn.setAttribute('aria-label', `${sem} dönemini sil`);
+            delBtn.textContent = '✕';
+            delBtn.onclick = e => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                deleteSemester(sem);
+            };
+            row.appendChild(delBtn);
+        }
+
+        listContainer.appendChild(row);
     });
 }
 
@@ -1327,6 +1372,8 @@ if (typeof module !== 'undefined' && module.exports) {
         isGradeHidden,
         round2,
         nextCourseId,
-        sanitizeCourseIds
+        sanitizeCourseIds,
+        removeSemesterFromState,
+        deleteSemester
     };
 }

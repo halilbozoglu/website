@@ -387,8 +387,17 @@ body {
     padding-bottom: 8px;
 }
 
+.sidebar-item-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 5px;
+}
+
 .sidebar-item {
     display: block;
+    flex: 1;
+    min-width: 0;
     width: 100%;
     text-align: left;
     background: transparent;
@@ -397,11 +406,13 @@ body {
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    margin-bottom: 5px;
+    margin-bottom: 0;
     transition: all 0.15s ease;
     font-family: inherit;
     font-size: 0.86rem;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sidebar-item:hover {
@@ -415,6 +426,29 @@ body {
     color: #ffffff;
     font-weight: 700;
     box-shadow: 0 3px 10px rgba(181, 37, 37, 0.25);
+}
+
+.sidebar-del-btn {
+    width: 30px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-del-btn:hover {
+    background: var(--fail-bg);
+    color: var(--fail-text);
+    border-color: var(--fail-border);
 }
 
 .btn-add-term {
@@ -1106,6 +1140,48 @@ details.target-details summary {
     flex-wrap: wrap;
 }
 
+/* Öneri & Hata Bildirimi Kartı */
+.feedback-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--ktun-red);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.feedback-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.feedback-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.feedback-mail {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--ktun-red);
+    text-decoration: none;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.feedback-mail:hover {
+    border-color: var(--ktun-red);
+    text-decoration: underline;
+}
+
 /* Footer (#202020) */
 .ktun-footer {
     background-color: var(--ktun-bar-dark);
@@ -1120,6 +1196,13 @@ details.target-details summary {
     align-items: center;
     justify-content: space-between;
     gap: 14px;
+    flex-wrap: wrap;
+}
+
+.footer-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     flex-wrap: wrap;
 }
 
@@ -1192,15 +1275,47 @@ details.target-details summary {
         gap: 8px;
     }
 
+    .sidebar-item-row {
+        display: inline-flex;
+        align-items: center;
+        margin-bottom: 0;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding-right: 4px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-item-row.active {
+        background: var(--ktun-red);
+        border-color: var(--ktun-red);
+        color: #ffffff;
+    }
+
     .sidebar-item {
         width: auto;
         white-space: nowrap;
         margin: 0;
         flex-shrink: 0;
-        padding: 8px 14px;
-        background: var(--bg-subtle);
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
         border-radius: 999px;
-        border: 1px solid var(--border);
+    }
+
+    .sidebar-item.active {
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .sidebar-del-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+    }
+
+    .sidebar-item-row.active .sidebar-del-btn {
+        color: rgba(255, 255, 255, 0.85);
     }
 
     .btn-add-term {
