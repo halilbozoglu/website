@@ -187,4 +187,30 @@ assert.strictEqual(formatNeeded(101, 35), '>100');
     assert(predHtml.includes('42'), 'Expected needed DD score 42 in prediction HTML');
 }
 
+// 9. Auto Mod + DEFAULT_SETTINGS_2026 (60/45) ile Eski ve Yeni Donem Durum Regresyonu
+{
+    const autoCourses = [
+        { id: 1, name: 'Fizik I', credit: 6, vize: '45', final: '60', semester: '2024-2025 Güz Dönemi' }, // Ort 54 -> Legacy CC -> GECTI
+        { id: 2, name: 'Prog I', credit: 6, vize: '32', final: '53', semester: '2024-2025 Bahar Dönemi' }, // Ort 44.6 (45) -> Legacy DC -> SARTLI
+        { id: 3, name: 'Manuel 54', credit: 5, vize: '54', final: '54', semester: 'Genel' }, // Yeni 54 -> DC -> KALDI (YANO < 2.50)
+        { id: 4, name: 'Manuel 60', credit: 5, vize: '60', final: '60', semester: 'Genel' }  // Yeni 60 -> CC -> GECTI
+    ];
+    const autoStats = computeAllStats(autoCourses, DEFAULT_SETTINGS_2026, 'auto');
+
+    const fizHtml = calculateStatus(autoCourses[0], autoStats, DEFAULT_SETTINGS_2026, 'auto');
+    assert(fizHtml.includes('CC'), 'Legacy 54 must be CC');
+    assert(fizHtml.includes('GEÇTİ'), 'Legacy 54 (CC) must be GECTI even with 2026 defaults (60/45)');
+
+    const progHtml = calculateStatus(autoCourses[1], autoStats, DEFAULT_SETTINGS_2026, 'auto');
+    assert(progHtml.includes('DC'), 'Legacy 45 must be DC');
+    assert(progHtml.includes('ŞARTLI'), 'Legacy 45 (DC) must be SARTLI');
+
+    const m54Html = calculateStatus(autoCourses[2], autoStats, DEFAULT_SETTINGS_2026, 'auto');
+    assert(m54Html.includes('DC'), 'Genel 54 must be DC under 2026 system');
+
+    const m60Html = calculateStatus(autoCourses[3], autoStats, DEFAULT_SETTINGS_2026, 'auto');
+    assert(m60Html.includes('CC'), 'Genel 60 must be CC under 2026 system');
+    assert(m60Html.includes('GEÇTİ'), 'Genel 60 must be GECTI under 2026 system');
+}
+
 console.log('ALL TESTS PASSED SUCCESSFULLY');

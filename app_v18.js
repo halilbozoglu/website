@@ -48,10 +48,8 @@ const STORAGE_KEY_V2 = 'gradeCalcData_v2';
 const STORAGE_KEY_V1 = 'gradeCalcData_v1';
 const THEME_STORAGE_KEY = 'ktunTheme';
 
-let legacyHintDismissed = false;
-
 let state = {
-    regulationMode: 'new', // 'new' | 'auto' | 'legacy'
+    regulationMode: 'auto', // OBS'ten geçmiş dönem varsa <2026 eski, diğer durumlarda yeni 2026-2027 sistemi
     settings: { ...DEFAULT_SETTINGS_2026 },
     courses: [],
     currentSemester: 'Genel',
@@ -296,10 +294,14 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
     const fRatio = (Number(settings.finalRatio) || 0) / 100;
     const finalBaraj = settings.finalThreshold !== undefined ? Number(settings.finalThreshold) : 35;
     const yanoLimit = settings.condYanoThreshold !== undefined ? Number(settings.condYanoThreshold) : 2.50;
+    const rawPass = settings.passGrade !== undefined ? Number(settings.passGrade) : DEFAULT_SETTINGS_2026.passGrade;
+    const rawCond = settings.condGrade !== undefined ? Number(settings.condGrade) : DEFAULT_SETTINGS_2026.condGrade;
+    const isUsingDefault2026 = rawPass === DEFAULT_SETTINGS_2026.passGrade && rawCond === DEFAULT_SETTINGS_2026.condGrade;
     const defaultPass = effectiveMode === 'legacy' ? 50 : 60;
     const defaultCond = effectiveMode === 'legacy' ? 40 : 45;
-    const pLimit = settings.passGrade !== undefined ? Number(settings.passGrade) : defaultPass;
-    const cLimit = settings.condGrade !== undefined ? Number(settings.condGrade) : defaultCond;
+    const pLimit = isUsingDefault2026 ? defaultPass : rawPass;
+    const cLimit = isUsingDefault2026 ? defaultCond : rawCond;
+    const isCustomThresholds = !isUsingDefault2026;
 
     const v = parseInputFloat(course.vize);
     const f = parseInputFloat(course.final);
@@ -399,7 +401,6 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
         badgeClass = 'badge-fail';
     } else {
         gInfo = getGradeFromScore(roundedAvg, effectiveMode);
-        const isCustomThresholds = (pLimit !== defaultPass) || (cLimit !== defaultCond);
 
         if (!isCustomThresholds) {
             if (gInfo.category === 'pass') {
@@ -608,7 +609,7 @@ function init() {
         try {
             const parsed = JSON.parse(savedV2);
             state = {
-                regulationMode: parsed.regulationMode || 'new',
+                regulationMode: 'auto',
                 settings: { ...DEFAULT_SETTINGS_2026, ...(parsed.settings || {}) },
                 courses: Array.isArray(parsed.courses) ? parsed.courses : [],
                 currentSemester: parsed.currentSemester || 'Genel',
@@ -623,7 +624,7 @@ function init() {
             try {
                 const legacyData = JSON.parse(savedV1);
                 state = {
-                    regulationMode: 'new',
+                    regulationMode: 'auto',
                     settings: { ...DEFAULT_SETTINGS_2026 },
                     courses: Array.isArray(legacyData.courses) ? legacyData.courses : [],
                     currentSemester: legacyData.currentSemester || 'Genel',
@@ -658,29 +659,8 @@ function saveState(shouldRender = true) {
     if (shouldRender) render();
 }
 
-function setRegulationMode(mode) {
-    if (!['new', 'auto', 'legacy'].includes(mode)) return;
-    const prevMode = state.regulationMode;
-    state.regulationMode = mode;
-
-    // Eğer eşikler önceki modun varsayılanındaysa yeni modun varsayılanına senkronla
-    const prevDef = prevMode === 'legacy' ? DEFAULT_SETTINGS_LEGACY : DEFAULT_SETTINGS_2026;
-    const nextDef = mode === 'legacy' ? DEFAULT_SETTINGS_LEGACY : DEFAULT_SETTINGS_2026;
-
-    if (Number(state.settings.passGrade) === prevDef.passGrade) {
-        state.settings.passGrade = nextDef.passGrade;
-    }
-    if (Number(state.settings.condGrade) === prevDef.condGrade) {
-        state.settings.condGrade = nextDef.condGrade;
-    }
-
-    syncSettingsInputs();
-    saveState();
-}
-
 function resetSettingsToDefault() {
-    const def = state.regulationMode === 'legacy' ? DEFAULT_SETTINGS_LEGACY : DEFAULT_SETTINGS_2026;
-    state.settings = { ...def };
+    state.settings = { ...DEFAULT_SETTINGS_2026 };
     syncSettingsInputs();
     saveState();
 }
@@ -726,7 +706,6 @@ function clearAll() {
         state.courses = [];
         state.semesters = ['Genel'];
         state.currentSemester = 'Genel';
-        legacyHintDismissed = false;
         addCourse(false);
         saveState();
     }
@@ -800,48 +779,38 @@ function updateHero(stats) {
         }
     }
 
-    document.querySelectorAll('[data-reg-mode]').forEach(btn => {
-        const active = btn.getAttribute('data-reg-mode') === state.regulationMode;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-
     const pill = document.getElementById('yanoRulePill');
     if (pill) {
-        const semStats = state.currentSemester === 'Genel' ? null : stats.bySemester[state.currentSemester];
-        const effectiveMode = state.currentSemester === 'Genel'
-            ? (state.regulationMode === 'legacy' ? 'legacy' : 'new')
-            : resolveEffectiveMode(state.currentSemester, state.regulationMode);
+        const isGenel = state.currentSemester === 'Genel';
+        const semStats = isGenel ? null : stats.bySemester[state.currentSemester];
+        const effectiveMode = isGenel ? 'new' : resolveEffectiveMode(state.currentSemester, state.regulationMode);
         const yanoLimit = state.settings.condYanoThreshold !== undefined ? Number(state.settings.condYanoThreshold) : 2.50;
 
         pill.className = 'yano-rule-pill';
         if (effectiveMode === 'legacy') {
             pill.classList.add('pill-muted');
-            pill.textContent = 'Eski Sistem Aktif (2026 Öncesi Skala)';
-        } else if (state.currentSemester === 'Genel') {
-            if (!stats.overall.hasCompleted) {
-                pill.classList.add('pill-neutral');
-                pill.textContent = `Yeni Yönetmelik: DC/DD için Dönem YANO ≥ ${yanoLimit.toFixed(2)}`;
-            } else {
-                pill.classList.add('pill-info');
-                pill.textContent = `2026-2027 Kuralı Aktif · GANO: ${stats.overall.gano.toFixed(2)}`;
-            }
-        } else if (!semStats || semStats.yano === null) {
-            pill.classList.add('pill-neutral');
-            pill.textContent = `DC/DD Şartı: Dönem YANO ≥ ${yanoLimit.toFixed(2)} (Bekleniyor)`;
-        } else if (semStats.yano >= yanoLimit) {
-            pill.classList.add('pill-pass');
-            pill.textContent = `YANO ${semStats.yano.toFixed(2)} ≥ ${yanoLimit.toFixed(2)} · DC/DD Otomatik Geçer ✓`;
+            pill.textContent = '2026 Öncesi Dönem · Eski Yönetmelik Skalası Otomatik Uygulandı';
+        } else if (isGenel && state.semesters.length > 1) {
+            pill.classList.add('pill-info');
+            const ganoStr = stats.overall.hasCompleted && stats.overall.gano !== null
+                ? stats.overall.gano.toFixed(2)
+                : '0.00';
+            pill.textContent = stats.overall.anyLegacyCourses
+                ? `Döneme Göre Otomatik Sistem · GANO: ${ganoStr}`
+                : `2026-2027 Yönetmeliği · GANO: ${ganoStr}`;
         } else {
-            pill.classList.add('pill-fail');
-            pill.textContent = `YANO ${semStats.yano.toFixed(2)} < ${yanoLimit.toFixed(2)} · DC/DD Başarısız ✕`;
+            const activeYano = isGenel ? stats.overall.gano : (semStats ? semStats.yano : null);
+            if (activeYano === null) {
+                pill.classList.add('pill-neutral');
+                pill.textContent = `DC/DD Şartı: Dönem YANO ≥ ${yanoLimit.toFixed(2)} (Bekleniyor)`;
+            } else if (activeYano >= yanoLimit) {
+                pill.classList.add('pill-pass');
+                pill.textContent = `YANO ${activeYano.toFixed(2)} ≥ ${yanoLimit.toFixed(2)} · DC/DD Otomatik Geçer ✓`;
+            } else {
+                pill.classList.add('pill-fail');
+                pill.textContent = `YANO ${activeYano.toFixed(2)} < ${yanoLimit.toFixed(2)} · DC/DD Başarısız ✕`;
+            }
         }
-    }
-
-    const hintBanner = document.getElementById('legacyHintBanner');
-    if (hintBanner) {
-        const shouldShow = stats.overall.anyLegacyCourses && state.regulationMode === 'new' && !legacyHintDismissed;
-        hintBanner.style.display = shouldShow ? 'flex' : 'none';
     }
 }
 
@@ -996,7 +965,6 @@ function parseOBS() {
         if (parsed.courses.length > 0) {
             state.courses = parsed.courses;
             state.semesters = parsed.semesters;
-            legacyHintDismissed = false;
 
             if (state.semesters.length > 1 && state.semesters[0] === 'Genel') {
                 state.currentSemester = state.semesters[state.semesters.length - 1];
@@ -1110,26 +1078,6 @@ if (typeof document !== 'undefined') {
             closeRegModal();
         }
     });
-
-    document.querySelectorAll('[data-reg-mode]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            setRegulationMode(btn.getAttribute('data-reg-mode'));
-        });
-    });
-
-    const switchToAutoBtn = document.getElementById('switchToAutoBtn');
-    if (switchToAutoBtn) {
-        switchToAutoBtn.addEventListener('click', () => setRegulationMode('auto'));
-    }
-
-    const dismissLegacyHintBtn = document.getElementById('dismissLegacyHintBtn');
-    if (dismissLegacyHintBtn) {
-        dismissLegacyHintBtn.addEventListener('click', () => {
-            legacyHintDismissed = true;
-            const hintBanner = document.getElementById('legacyHintBanner');
-            if (hintBanner) hintBanner.style.display = 'none';
-        });
-    }
 
     ['vizeRatio', 'finalRatio', 'passGrade', 'condGrade', 'finalThreshold'].forEach(id => {
         const el = document.getElementById(id);

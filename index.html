@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="style.css?v=21">
     <script>
         (function () {
             try {
@@ -23,14 +23,16 @@
     <!-- 1. Üst Hızlı Bağlantı Şeridi (#202020) -->
     <div class="ktun-topbar">
         <div class="shell topbar-inner">
-            <nav class="topbar-right" aria-label="Kurumsal bağlantılar">
+            <nav class="topbar-links" aria-label="Kısayollar">
+                <span class="topbar-label">Kısayollar:</span>
                 <a href="https://www.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">ktun.edu.tr</a>
                 <a href="https://obsogrenci.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">OBS</a>
                 <a href="https://lms.ktun.edu.tr/" target="_blank" rel="noopener noreferrer">LMS</a>
+                <a href="https://www.ktun.edu.tr/tr/Birim/Duyurular/?brm=ZsobiwaZkLryYw8fWfQxOA==" target="_blank" rel="noopener noreferrer">EEM Duyurular</a>
                 <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer">Resmî Gazete</a>
                 <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub</a>
-                <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
             </nav>
+            <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
         </div>
     </div>
 
@@ -60,29 +62,9 @@
         <div class="hero-pattern" aria-hidden="true"></div>
         <div class="shell hero-inner">
             <div class="hero-left">
-                <div class="hero-kicker">2026-2027 Eğitim-Öğretim Yılı Güncel Sistemi</div>
                 <h2 class="hero-title" id="activeSemesterTitle">Aktif Dönem Not Hesaplama</h2>
                 <div class="yano-rule-pill pill-neutral" id="yanoRulePill">
                     Yeni Yönetmelik: DC/DD için Dönem YANO ≥ 2.50
-                </div>
-            </div>
-
-            <div class="hero-right">
-                <span class="reg-switch-label">Yönetmelik Modu</span>
-                <div class="reg-segmented" role="group" aria-label="Yönetmelik Modu">
-                    <button type="button" class="reg-seg-btn active" data-reg-mode="new" aria-pressed="true">2026-2027 Yeni</button>
-                    <button type="button" class="reg-seg-btn" data-reg-mode="auto" aria-pressed="false">Döneme Göre Oto</button>
-                    <button type="button" class="reg-seg-btn" data-reg-mode="legacy" aria-pressed="false">Eski Sistem</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="shell">
-            <div class="legacy-hint-banner" id="legacyHintBanner" style="display: none;">
-                <span>2026 öncesi dönemler tespit edildi. Eski ve yeni dönemleri kendi yönetmeliğine göre hesaplamak için <strong>Döneme Göre Oto</strong> moduna geçebilirsiniz.</span>
-                <div class="legacy-hint-actions">
-                    <button type="button" class="btn btn-hint-action" id="switchToAutoBtn">Otomatik Moda Geç</button>
-                    <button type="button" class="btn btn-hint-close" id="dismissLegacyHintBtn" aria-label="Uyarıyı kapat">✕</button>
                 </div>
             </div>
         </div>
@@ -281,7 +263,7 @@
         </div>
     </footer>
 
-    <script src="app_v18.js"></script>
+    <script src="app_v18.js?v=2"></script>
 </body>
 
 </html>
