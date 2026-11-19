@@ -1140,48 +1140,6 @@ details.target-details summary {
     flex-wrap: wrap;
 }
 
-/* Öneri & Hata Bildirimi Kartı */
-.feedback-card {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--ktun-red);
-    border-radius: var(--radius-lg);
-    padding: 16px 20px;
-    box-shadow: var(--shadow-sm);
-}
-
-.feedback-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.feedback-title {
-    font-size: 0.92rem;
-    font-weight: 800;
-    color: var(--text-main);
-}
-
-.feedback-mail {
-    font-family: var(--font-mono);
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--ktun-red);
-    text-decoration: none;
-    background: var(--bg-subtle);
-    border: 1px solid var(--border);
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.feedback-mail:hover {
-    border-color: var(--ktun-red);
-    text-decoration: underline;
-}
-
 /* Footer (#202020) */
 .ktun-footer {
     background-color: var(--ktun-bar-dark);
