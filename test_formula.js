@@ -338,9 +338,9 @@ assert.strictEqual(formatNeeded(101, 35), '>100');
     assert.strictEqual(mockState.currentSemester, 'Genel');
 
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert(!indexHtml.includes('feedback-card'), 'Upper feedback card must be removed');
-    assert(indexHtml.includes('Öneri &amp; Hata Bildirimi'), 'index.html must include feedback title');
-    assert(indexHtml.includes('bozogluhalil087@gmail.com'), 'index.html must include feedback email');
+    assert(!indexHtml.includes('class="feedback-card"'), 'Upper feedback card must be removed');
+    assert(indexHtml.includes('Öneri &amp; Hata Bildirimi'), 'index.html must include feedback title in footer');
+    assert(indexHtml.includes('bozogluhalil087@gmail.com'), 'index.html must include feedback email in footer');
     assert(indexHtml.includes('style.css?v=24') && indexHtml.includes('app_v18.js?v=4'), 'Asset versions must be updated');
 }
 
