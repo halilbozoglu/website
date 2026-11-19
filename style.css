@@ -150,7 +150,15 @@ body {
     text-decoration: underline;
 }
 
-.theme-toggle-btn {
+.topbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.theme-toggle-btn,
+.privacy-toggle-btn {
     background: rgba(255, 255, 255, 0.1);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.22);
@@ -164,9 +172,16 @@ body {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.theme-toggle-btn:hover {
+.theme-toggle-btn:hover,
+.privacy-toggle-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.4);
+}
+
+.privacy-toggle-btn.active {
+    background: var(--ktun-red);
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #ffffff;
 }
 
 /* --- 2. Ana KTÜN Kırmızı Navbar (#b52525) --- */
@@ -644,6 +659,15 @@ td input:focus {
     box-shadow: 0 0 0 3px rgba(181, 37, 37, 0.15);
 }
 
+td input.grade-masked {
+    font-family: var(--font-mono);
+    letter-spacing: 2px;
+    text-align: center;
+    color: var(--text-muted);
+    background-color: var(--bg-subtle);
+    border-style: dashed;
+}
+
 /* Sonuç Hücresi & Rozetler */
 .result-cell {
     font-size: 0.86rem;
@@ -769,6 +793,26 @@ td input:focus {
     background: var(--cond-bg);
     color: var(--cond-text);
     border-color: var(--cond-border);
+}
+
+.masked-pill {
+    color: var(--text-muted);
+}
+
+.grade-masked-pill {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    border-color: var(--border);
+}
+
+.badge-masked {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    border-color: var(--border-strong);
+}
+
+.privacy-peek summary {
+    color: var(--text-muted);
 }
 
 .upgrade-hint {

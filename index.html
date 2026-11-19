@@ -4,19 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self';">
+    <meta name="referrer" content="no-referrer">
     <title>KTÜN Not Hesaplayıcı | 2026-2027 Güncel Yönetmelik</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=21">
-    <script>
-        (function () {
-            try {
-                var saved = localStorage.getItem('ktunTheme');
-                if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-            } catch (e) { }
-        })();
-    </script>
+    <link rel="stylesheet" href="style.css?v=22">
+    <script src="theme-init.js?v=1"></script>
 </head>
 
 <body>
@@ -32,7 +27,10 @@
                 <a href="https://www.resmigazete.gov.tr/eskiler/2026/07/20260710-3.htm" target="_blank" rel="noopener noreferrer">Resmî Gazete</a>
                 <a href="https://github.com/halilbozoglu/website" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>
-            <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
+            <div class="topbar-controls">
+                <button type="button" class="privacy-toggle-btn" id="privacyToggleBtn" aria-pressed="false">👁 Gizlilik Modu</button>
+                <button type="button" class="theme-toggle-btn" id="themeToggleBtn">🌙 Gece Modu</button>
+            </div>
         </div>
     </div>
 
@@ -76,7 +74,7 @@
             <aside class="sidebar" id="semesterSidebar">
                 <div class="sidebar-header">Dönemler</div>
                 <div id="semesterList"></div>
-                <button type="button" class="btn btn-sm btn-add-term" onclick="addNewSemester()">+ Yeni Dönem</button>
+                <button type="button" class="btn btn-sm btn-add-term" id="addSemesterBtn">+ Yeni Dönem</button>
             </aside>
 
             <main class="content">
@@ -85,7 +83,7 @@
                     <div class="summary-card">
                         <h3>Dönem Ortalaması (100'lük)</h3>
                         <div class="summary-value mono" id="termAvg">0.00</div>
-                        <div class="kpi-badge kpi-neutral">Vize %40 · Final %60 önizleme</div>
+                        <div class="kpi-badge kpi-neutral" id="termAvgBadge">Vize %40 · Final %60 önizleme</div>
                     </div>
 
                     <div class="summary-card">
@@ -171,6 +169,10 @@
                             <label for="condYanoThreshold">Şartlı YANO Barajı</label>
                             <input type="number" id="condYanoThreshold" value="2.50" step="0.05" min="0" max="4">
                         </div>
+                        <div class="input-group">
+                            <label for="privacyThreshold">Gizlilik Eşiği (Altını Gizle)</label>
+                            <input type="number" id="privacyThreshold" value="50" min="0" max="100">
+                        </div>
                         <div class="settings-footer-actions">
                             <button type="button" class="btn btn-clear" id="resetSettingsBtn">Varsayılana Sıfırla</button>
                         </div>
@@ -185,15 +187,15 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 id="obsModalTitle">OBS'den Not Aktar</h2>
-                <button type="button" class="modal-close-btn" onclick="closeModal()" aria-label="Kapat">✕</button>
+                <button type="button" class="modal-close-btn" data-close-modal="obsModal" aria-label="Kapat">✕</button>
             </div>
             <p class="modal-info">
                 OBS <strong>Not Durumu</strong> sayfasını açın, tüm sayfayı seçip (<code>Ctrl+A</code>) kopyalayın (<code>Ctrl+C</code>) ve aşağıya yapıştırın. Dönemler, ders kredileri, vize/final ve varsa bütünleme notları otomatik ayrıştırılır.
             </p>
             <textarea id="obsInput" placeholder="OBS sayfasından kopyaladığınız metni Ctrl+V ile buraya yapıştırın..."></textarea>
             <div class="modal-actions">
-                <button type="button" class="btn btn-clear" onclick="closeModal()">İptal</button>
-                <button type="button" class="btn btn-add" onclick="parseOBS()">Verileri İşle</button>
+                <button type="button" class="btn btn-clear" data-close-modal="obsModal">İptal</button>
+                <button type="button" class="btn btn-add" id="parseObsBtn">Verileri İşle</button>
             </div>
         </div>
     </div>
@@ -263,7 +265,7 @@
         </div>
     </footer>
 
-    <script src="app_v18.js?v=2"></script>
+    <script src="app_v18.js?v=3"></script>
 </body>
 
 </html>

@@ -32,7 +32,9 @@ const DEFAULT_SETTINGS_2026 = {
     passGrade: 60,
     condGrade: 45,
     finalThreshold: 35,
-    condYanoThreshold: 2.50
+    condYanoThreshold: 2.50,
+    privacyMode: false,
+    privacyThreshold: 50
 };
 
 const DEFAULT_SETTINGS_LEGACY = {
@@ -41,12 +43,47 @@ const DEFAULT_SETTINGS_LEGACY = {
     passGrade: 50,
     condGrade: 40,
     finalThreshold: 35,
-    condYanoThreshold: 2.50
+    condYanoThreshold: 2.50,
+    privacyMode: false,
+    privacyThreshold: 50
 };
 
 const STORAGE_KEY_V2 = 'gradeCalcData_v2';
 const STORAGE_KEY_V1 = 'gradeCalcData_v1';
 const THEME_STORAGE_KEY = 'ktunTheme';
+
+let _idSeq = 1;
+
+function nextCourseId() {
+    return _idSeq++;
+}
+
+function sanitizeCourseIds(courses) {
+    if (!Array.isArray(courses)) return [];
+    const used = new Set();
+    let maxId = 0;
+
+    courses.forEach(c => {
+        const num = Number(c.id);
+        if (Number.isInteger(num) && num > 0 && !used.has(num)) {
+            c.id = num;
+            used.add(num);
+            if (num > maxId) maxId = num;
+        } else {
+            c.id = null;
+        }
+    });
+
+    _idSeq = Math.max(_idSeq, maxId + 1);
+
+    courses.forEach(c => {
+        if (c.id === null) {
+            c.id = nextCourseId();
+        }
+    });
+
+    return courses;
+}
 
 let state = {
     regulationMode: 'auto', // OBS'ten geçmiş dönem varsa <2026 eski, diğer durumlarda yeni 2026-2027 sistemi
@@ -76,6 +113,17 @@ function parseInputFloat(val) {
     return parseFloat(normalized);
 }
 
+function round2(n) {
+    return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+function isGradeHidden(numVal, settings) {
+    if (!settings || !settings.privacyMode) return false;
+    if (typeof numVal !== 'number' || isNaN(numVal)) return false;
+    const threshold = settings.privacyThreshold !== undefined ? Number(settings.privacyThreshold) : 50;
+    return numVal < threshold;
+}
+
 /**
  * Yönetmelik modu çözümleme ve harf notu dönüşümü
  */
@@ -83,7 +131,6 @@ function resolveEffectiveMode(semesterName, regulationMode) {
     if (regulationMode === 'legacy') return 'legacy';
     if (regulationMode === 'new' || !regulationMode) return 'new';
 
-    // 'auto' modu: dönem adındaki ilk yılı (YYYY-YYYY) kontrol et
     if (semesterName && typeof semesterName === 'string') {
         const m = semesterName.match(/(\d{4})\s*-\s*(\d{4})/);
         if (m) {
@@ -202,7 +249,6 @@ function computeAllStats(courses, settings, regulationMode) {
         }
     });
 
-    // İlk geçiş sonrası dönem YANO ve AKTS sınırlarını hesapla
     let overallWeighted100 = 0;
     let overallPreviewCredits = 0;
     let overallWeightedGpa = 0;
@@ -219,7 +265,7 @@ function computeAllStats(courses, settings, regulationMode) {
         bucket.yano = bucket.completedCredits > 0
             ? bucket.weightedGpa / bucket.completedCredits
             : null;
-        bucket.dcDdPassed = bucket.yano !== null && bucket.yano >= yanoLimit;
+        bucket.dcDdPassed = bucket.yano !== null && round2(bucket.yano) >= round2(yanoLimit);
         bucket.aktsExceeded = bucket.registeredAkts > 45;
 
         overallWeighted100 += bucket.weighted100;
@@ -234,7 +280,6 @@ function computeAllStats(courses, settings, regulationMode) {
         }
     });
 
-    // İkinci geçiş: her dönem ve genel için başarısız ders var mı kontrol et
     (courses || []).forEach(c => {
         const sem = c.semester || 'Genel';
         const bucket = bySemester[sem];
@@ -255,7 +300,7 @@ function computeAllStats(courses, settings, regulationMode) {
             bucket.hasFailed = true;
             anyFailed = true;
         } else if (gInfo.category === 'cond' && bucket.effectiveMode === 'new') {
-            if (bucket.yano !== null && bucket.yano < yanoLimit) {
+            if (bucket.yano !== null && round2(bucket.yano) < round2(yanoLimit)) {
                 bucket.hasFailed = true;
                 anyFailed = true;
             }
@@ -265,7 +310,7 @@ function computeAllStats(courses, settings, regulationMode) {
     const overallHasCompleted = overallCompletedCredits > 0;
     const gano = overallHasCompleted ? overallWeightedGpa / overallCompletedCredits : null;
     const overallAvg100 = overallPreviewCredits > 0 ? overallWeighted100 / overallPreviewCredits : 0;
-    const upperYearEligible = overallHasCompleted && gano >= 3.00 && !anyFailed;
+    const upperYearEligible = overallHasCompleted && round2(gano) >= 3.00 && !anyFailed;
 
     return {
         bySemester,
@@ -294,6 +339,9 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
     const fRatio = (Number(settings.finalRatio) || 0) / 100;
     const finalBaraj = settings.finalThreshold !== undefined ? Number(settings.finalThreshold) : 35;
     const yanoLimit = settings.condYanoThreshold !== undefined ? Number(settings.condYanoThreshold) : 2.50;
+    const privacyActive = Boolean(settings && settings.privacyMode);
+    const privacyThreshold = settings && settings.privacyThreshold !== undefined ? Number(settings.privacyThreshold) : 50;
+
     const rawPass = settings.passGrade !== undefined ? Number(settings.passGrade) : DEFAULT_SETTINGS_2026.passGrade;
     const rawCond = settings.condGrade !== undefined ? Number(settings.condGrade) : DEFAULT_SETTINGS_2026.condGrade;
     const isUsingDefault2026 = rawPass === DEFAULT_SETTINGS_2026.passGrade && rawCond === DEFAULT_SETTINGS_2026.condGrade;
@@ -336,9 +384,9 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
 
             let yanoHint = `YANO ≥ ${yanoLimit.toFixed(2)} şartı`;
             if (semStats && semStats.yano !== null) {
-                yanoHint = semStats.yano >= yanoLimit
-                    ? `YANO ${semStats.yano.toFixed(2)} ≥ ${yanoLimit.toFixed(2)} ✓`
-                    : `YANO ${semStats.yano.toFixed(2)} < ${yanoLimit.toFixed(2)}`;
+                yanoHint = round2(semStats.yano) >= round2(yanoLimit)
+                    ? `YANO ${round2(semStats.yano).toFixed(2)} ≥ ${yanoLimit.toFixed(2)} ✓`
+                    : `YANO ${round2(semStats.yano).toFixed(2)} < ${yanoLimit.toFixed(2)}`;
             }
 
             predictHtml = `
@@ -375,10 +423,23 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
             }
         });
 
+        const gridHtml = targetsHtml ? `<div class="target-grid">${targetsHtml}</div>` : '';
+
+        if (privacyActive && v < privacyThreshold) {
+            return `${semTag}
+                <div class="result-bottom">
+                    <span class="status-badge badge-masked">Gizli (&lt; ${privacyThreshold})</span>
+                </div>
+                <details class="target-details privacy-peek">
+                    <summary>Hedef analizi gizli (görmek için tıkla)</summary>
+                    ${predictHtml}${gridHtml}
+                </details>`;
+        }
+
         const detailsHtml = targetsHtml
             ? `<details class="target-details">
                     <summary>Tüm Harf Hedefleri</summary>
-                    <div class="target-grid">${targetsHtml}</div>
+                    ${gridHtml}
                </details>`
             : '';
 
@@ -411,11 +472,11 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
                     if (!semStats || semStats.yano === null) {
                         statusText = `ŞARTLI (AKTS girin · YANO ≥ ${yanoLimit.toFixed(2)})`;
                         badgeClass = 'badge-cond';
-                    } else if (semStats.yano >= yanoLimit) {
-                        statusText = `GEÇTİ (Şartlı · YANO ${semStats.yano.toFixed(2)})`;
+                    } else if (round2(semStats.yano) >= round2(yanoLimit)) {
+                        statusText = `GEÇTİ (Şartlı · YANO ${round2(semStats.yano).toFixed(2)})`;
                         badgeClass = 'badge-pass';
                     } else {
-                        statusText = `KALDI (Şartlı · YANO ${semStats.yano.toFixed(2)} < ${yanoLimit.toFixed(2)})`;
+                        statusText = `KALDI (Şartlı · YANO ${round2(semStats.yano).toFixed(2)} < ${yanoLimit.toFixed(2)})`;
                         badgeClass = 'badge-fail';
                     }
                 } else {
@@ -435,11 +496,11 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
                     if (!semStats || semStats.yano === null) {
                         statusText = `ŞARTLI (AKTS girin · YANO ≥ ${yanoLimit.toFixed(2)})`;
                         badgeClass = 'badge-cond';
-                    } else if (semStats.yano >= yanoLimit) {
-                        statusText = `GEÇTİ (Şartlı · YANO ${semStats.yano.toFixed(2)})`;
+                    } else if (round2(semStats.yano) >= round2(yanoLimit)) {
+                        statusText = `GEÇTİ (Şartlı · YANO ${round2(semStats.yano).toFixed(2)})`;
                         badgeClass = 'badge-pass';
                     } else {
-                        statusText = `KALDI (Şartlı · YANO ${semStats.yano.toFixed(2)} < ${yanoLimit.toFixed(2)})`;
+                        statusText = `KALDI (Şartlı · YANO ${round2(semStats.yano).toFixed(2)} < ${yanoLimit.toFixed(2)})`;
                         badgeClass = 'badge-fail';
                     }
                 } else {
@@ -451,6 +512,20 @@ function calculateStatus(course, stats, settings, regulationMode, options = {}) 
                 badgeClass = 'badge-fail';
             }
         }
+    }
+
+    const shouldHideResult = privacyActive && (avg < privacyThreshold || (barajFailed && f < privacyThreshold));
+    if (shouldHideResult) {
+        return `
+            ${semTag}
+            <div class="result-top">
+                <span class="result-avg masked-pill">Ort: <strong>••</strong></span>
+                <span class="grade-pill grade-masked-pill">••</span>
+            </div>
+            <div class="result-bottom">
+                <span class="status-badge badge-masked">Gizli (&lt; ${privacyThreshold})</span>
+            </div>
+        `;
     }
 
     const gradeColorClass = getGradeBadgeClass(gInfo.letter, badgeClass);
@@ -528,13 +603,13 @@ function parseOBSText(text) {
         let vize = '';
         let final = '';
 
-        const vizeMatch = restOfBlock.match(/Vize\s+(-?\d+)/i);
+        const vizeMatch = restOfBlock.match(/Vize\s+(-?\d+(?:[.,]\d+)?)/i);
         if (vizeMatch) vize = vizeMatch[1];
 
-        const finalMatch = restOfBlock.match(/Final\s+(-?\d+)/i);
+        const finalMatch = restOfBlock.match(/Final\s+(-?\d+(?:[.,]\d+)?)/i);
         if (finalMatch) final = finalMatch[1];
 
-        const butMatch = restOfBlock.match(/B[üu]t(?:[üu]nleme)?\s+(-?\d+)/i);
+        const butMatch = restOfBlock.match(/B[üu]t(?:[üu]nleme)?\s+(-?\d+(?:[.,]\d+)?)/i);
         if (butMatch && butMatch[1] !== '-1') {
             final = butMatch[1];
         }
@@ -543,7 +618,7 @@ function parseOBSText(text) {
         if (final === '-1') final = '0';
 
         newCourses.push({
-            id: Date.now() + Math.random(),
+            id: nextCourseId(),
             name: courseName,
             credit: courseCredit,
             vize,
@@ -585,6 +660,25 @@ function toggleTheme() {
     applyTheme(next);
 }
 
+function updatePrivacyButton() {
+    if (typeof document === 'undefined') return;
+    const btn = document.getElementById('privacyToggleBtn');
+    if (!btn) return;
+    const active = Boolean(state.settings && state.settings.privacyMode);
+    const threshold = state.settings && state.settings.privacyThreshold !== undefined
+        ? Number(state.settings.privacyThreshold)
+        : 50;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.textContent = active ? `🙈 Gizlilik: Açık (< ${threshold})` : '👁 Gizlilik Modu';
+}
+
+function togglePrivacyMode() {
+    state.settings.privacyMode = !state.settings.privacyMode;
+    updatePrivacyButton();
+    saveState();
+}
+
 function syncSettingsInputs() {
     const map = {
         vizeRatio: state.settings.vizeRatio,
@@ -592,12 +686,14 @@ function syncSettingsInputs() {
         passGrade: state.settings.passGrade,
         condGrade: state.settings.condGrade,
         finalThreshold: state.settings.finalThreshold,
-        condYanoThreshold: state.settings.condYanoThreshold
+        condYanoThreshold: state.settings.condYanoThreshold,
+        privacyThreshold: state.settings.privacyThreshold
     };
     Object.keys(map).forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = map[id];
     });
+    updatePrivacyButton();
 }
 
 function init() {
@@ -611,12 +707,13 @@ function init() {
             state = {
                 regulationMode: 'auto',
                 settings: { ...DEFAULT_SETTINGS_2026, ...(parsed.settings || {}) },
-                courses: Array.isArray(parsed.courses) ? parsed.courses : [],
+                courses: sanitizeCourseIds(Array.isArray(parsed.courses) ? parsed.courses : []),
                 currentSemester: parsed.currentSemester || 'Genel',
                 semesters: Array.isArray(parsed.semesters) && parsed.semesters.length > 0 ? parsed.semesters : ['Genel']
             };
         } catch (e) {
             console.error('v2 save data mismatch', e);
+            if (state.courses.length === 0) addCourse(false);
         }
     } else {
         const savedV1 = localStorage.getItem(STORAGE_KEY_V1);
@@ -626,7 +723,7 @@ function init() {
                 state = {
                     regulationMode: 'auto',
                     settings: { ...DEFAULT_SETTINGS_2026 },
-                    courses: Array.isArray(legacyData.courses) ? legacyData.courses : [],
+                    courses: sanitizeCourseIds(Array.isArray(legacyData.courses) ? legacyData.courses : []),
                     currentSemester: legacyData.currentSemester || 'Genel',
                     semesters: Array.isArray(legacyData.semesters) && legacyData.semesters.length > 0 ? legacyData.semesters : ['Genel']
                 };
@@ -660,7 +757,8 @@ function saveState(shouldRender = true) {
 }
 
 function resetSettingsToDefault() {
-    state.settings = { ...DEFAULT_SETTINGS_2026 };
+    const keepPrivacyMode = Boolean(state.settings.privacyMode);
+    state.settings = { ...DEFAULT_SETTINGS_2026, privacyMode: keepPrivacyMode };
     syncSettingsInputs();
     saveState();
 }
@@ -673,6 +771,8 @@ function updateSettings() {
     const thresholdVal = parseInputFloat(document.getElementById('finalThreshold').value);
     const yanoEl = document.getElementById('condYanoThreshold');
     const yanoVal = yanoEl ? parseInputFloat(yanoEl.value) : 2.50;
+    const privacyEl = document.getElementById('privacyThreshold');
+    const privacyVal = privacyEl ? parseInputFloat(privacyEl.value) : 50;
 
     state.settings.vizeRatio = isNaN(vizeVal) ? 40 : vizeVal;
     state.settings.finalRatio = isNaN(finalVal) ? 60 : finalVal;
@@ -680,13 +780,15 @@ function updateSettings() {
     state.settings.condGrade = isNaN(condVal) ? 45 : condVal;
     state.settings.finalThreshold = isNaN(thresholdVal) ? 35 : thresholdVal;
     state.settings.condYanoThreshold = isNaN(yanoVal) ? 2.50 : Math.max(0, Math.min(4, yanoVal));
+    state.settings.privacyThreshold = isNaN(privacyVal) ? 50 : Math.max(0, Math.min(100, privacyVal));
 
+    updatePrivacyButton();
     saveState();
 }
 
 function addCourse(save = true) {
     state.courses.push({
-        id: Date.now() + Math.random(),
+        id: nextCourseId(),
         name: '',
         credit: '',
         vize: '',
@@ -726,6 +828,28 @@ function validateInput(el, min = 0, max = 100) {
     return val;
 }
 
+function syncInputMask(inputEl, field, course) {
+    if (!inputEl || !course || (field !== 'vize' && field !== 'final')) return;
+    const num = parseInputFloat(course[field]);
+    const masked = isGradeHidden(num, state.settings);
+
+    if (masked) {
+        inputEl.setAttribute('type', 'password');
+        inputEl.setAttribute('inputmode', 'decimal');
+        inputEl.removeAttribute('step');
+        inputEl.removeAttribute('min');
+        inputEl.removeAttribute('max');
+        inputEl.classList.add('grade-masked');
+    } else {
+        inputEl.setAttribute('type', 'number');
+        inputEl.setAttribute('step', 'any');
+        inputEl.setAttribute('min', '0');
+        inputEl.setAttribute('max', '100');
+        inputEl.removeAttribute('inputmode');
+        inputEl.classList.remove('grade-masked');
+    }
+}
+
 function updateCourseData(id, field, value) {
     const course = state.courses.find(c => c.id === id);
     if (!course) return;
@@ -735,7 +859,6 @@ function updateCourseData(id, field, value) {
 
     if (field === 'name') return;
 
-    // YANO değiştiğinde aynı dönemdeki tüm DC/DD derslerinin durumu etkilendiği için tüm görünür satırları güncelle
     const stats = computeAllStats(state.courses, state.settings, state.regulationMode);
     const visibleCourses = getVisibleCourses();
     const showSemTag = state.currentSemester === 'Genel' && state.semesters.length > 1;
@@ -793,7 +916,7 @@ function updateHero(stats) {
         } else if (isGenel && state.semesters.length > 1) {
             pill.classList.add('pill-info');
             const ganoStr = stats.overall.hasCompleted && stats.overall.gano !== null
-                ? stats.overall.gano.toFixed(2)
+                ? round2(stats.overall.gano).toFixed(2)
                 : '0.00';
             pill.textContent = stats.overall.anyLegacyCourses
                 ? `Döneme Göre Otomatik Sistem · GANO: ${ganoStr}`
@@ -803,12 +926,12 @@ function updateHero(stats) {
             if (activeYano === null) {
                 pill.classList.add('pill-neutral');
                 pill.textContent = `DC/DD Şartı: Dönem YANO ≥ ${yanoLimit.toFixed(2)} (Bekleniyor)`;
-            } else if (activeYano >= yanoLimit) {
+            } else if (round2(activeYano) >= round2(yanoLimit)) {
                 pill.classList.add('pill-pass');
-                pill.textContent = `YANO ${activeYano.toFixed(2)} ≥ ${yanoLimit.toFixed(2)} · DC/DD Otomatik Geçer ✓`;
+                pill.textContent = `YANO ${round2(activeYano).toFixed(2)} ≥ ${yanoLimit.toFixed(2)} · DC/DD Otomatik Geçer ✓`;
             } else {
                 pill.classList.add('pill-fail');
-                pill.textContent = `YANO ${activeYano.toFixed(2)} < ${yanoLimit.toFixed(2)} · DC/DD Başarısız ✕`;
+                pill.textContent = `YANO ${round2(activeYano).toFixed(2)} < ${yanoLimit.toFixed(2)} · DC/DD Başarısız ✕`;
             }
         }
     }
@@ -825,10 +948,15 @@ function updateSummary(stats) {
     const termAvgEl = document.getElementById('termAvg');
     if (termAvgEl) termAvgEl.textContent = termAvgVal.toFixed(2);
 
+    const termAvgBadge = document.getElementById('termAvgBadge');
+    if (termAvgBadge) {
+        termAvgBadge.textContent = `Vize %${state.settings.vizeRatio} · Final %${state.settings.finalRatio} önizleme`;
+    }
+
     // 2. YANO (Dönem 4.00)
     const yanoVal = isGenel ? computed.overall.gano : (semStats ? semStats.yano : null);
     const gpaEl = document.getElementById('gpaValue');
-    if (gpaEl) gpaEl.textContent = yanoVal !== null ? yanoVal.toFixed(2) : '0.00';
+    if (gpaEl) gpaEl.textContent = yanoVal !== null ? round2(yanoVal).toFixed(2) : '0.00';
 
     const yanoBadgeEl = document.getElementById('yanoBadge');
     if (yanoBadgeEl) {
@@ -843,7 +971,7 @@ function updateSummary(stats) {
             } else if (yanoVal === null) {
                 yanoBadgeEl.className = 'kpi-badge kpi-neutral';
                 yanoBadgeEl.textContent = `DC/DD için ≥ ${yanoLimit.toFixed(2)} gerekir`;
-            } else if (yanoVal >= yanoLimit) {
+            } else if (round2(yanoVal) >= round2(yanoLimit)) {
                 yanoBadgeEl.className = 'kpi-badge kpi-pass';
                 yanoBadgeEl.textContent = `DC/DD Geçer (≥ ${yanoLimit.toFixed(2)}) ✓`;
             } else {
@@ -857,7 +985,7 @@ function updateSummary(stats) {
     const ganoEl = document.getElementById('ganoValue');
     if (ganoEl) {
         ganoEl.textContent = computed.overall.hasCompleted && computed.overall.gano !== null
-            ? computed.overall.gano.toFixed(2)
+            ? round2(computed.overall.gano).toFixed(2)
             : '0.00';
     }
 
@@ -869,7 +997,7 @@ function updateSummary(stats) {
         } else if (computed.overall.upperYearEligible) {
             ganoBadgeEl.className = 'kpi-badge kpi-pass';
             ganoBadgeEl.textContent = 'Üstten ders alabilir (GANO ≥ 3.00) ✓';
-        } else if (computed.overall.gano >= 3.00 && computed.overall.anyFailed) {
+        } else if (round2(computed.overall.gano) >= 3.00 && computed.overall.anyFailed) {
             ganoBadgeEl.className = 'kpi-badge kpi-warn';
             ganoBadgeEl.textContent = 'GANO ≥ 3.00 (Alttan başarısız ders var)';
         } else {
@@ -982,6 +1110,13 @@ function parseOBS() {
     }
 }
 
+function buildGradeInputAttrs(field, rawValue, numVal, placeholder) {
+    if (isGradeHidden(numVal, state.settings)) {
+        return `type="password" inputmode="decimal" class="grade-masked" data-field="${field}" value="${escapeHtml(rawValue)}" placeholder="${placeholder}"`;
+    }
+    return `type="number" step="any" min="0" max="100" data-field="${field}" value="${escapeHtml(rawValue)}" placeholder="${placeholder}"`;
+}
+
 function render() {
     renderSidebar();
 
@@ -999,22 +1134,27 @@ function render() {
             const row = document.createElement('tr');
             row.setAttribute('data-id', course.id);
 
+            const vNum = parseInputFloat(course.vize);
+            const fNum = parseInputFloat(course.final);
+            const vizeAttrs = buildGradeInputAttrs('vize', course.vize, vNum, 'Vize');
+            const finalAttrs = buildGradeInputAttrs('final', course.final, fNum, 'Final');
+
             row.innerHTML = `
                 <td data-label="Ders Adı">
-                    <input type="text" value="${escapeHtml(course.name)}" placeholder="Ders adı..." oninput="updateCourseData(${course.id}, 'name', this.value)">
+                    <input type="text" data-field="name" value="${escapeHtml(course.name)}" placeholder="Ders adı...">
                 </td>
                 <td data-label="AKTS">
-                    <input type="number" step="0.5" min="0" max="30" value="${escapeHtml(course.credit)}" placeholder="AKTS" oninput="validateInput(this, 0, 30); updateCourseData(${course.id}, 'credit', this.value)">
+                    <input type="number" step="0.5" min="0" max="30" data-field="credit" value="${escapeHtml(course.credit)}" placeholder="AKTS">
                 </td>
                 <td data-label="Vize">
-                    <input type="number" step="any" min="0" max="100" value="${escapeHtml(course.vize)}" placeholder="Vize" oninput="validateInput(this, 0, 100); updateCourseData(${course.id}, 'vize', this.value)">
+                    <input ${vizeAttrs}>
                 </td>
                 <td data-label="Final">
-                    <input type="number" step="any" min="0" max="100" value="${escapeHtml(course.final)}" placeholder="Final" oninput="validateInput(this, 0, 100); updateCourseData(${course.id}, 'final', this.value)">
+                    <input ${finalAttrs}>
                 </td>
                 <td data-label="Durum / Analiz" class="result-cell">${analysisHtml}</td>
                 <td data-label="İşlem">
-                    <button type="button" class="btn btn-remove" onclick="removeCourse(${course.id})">Sil</button>
+                    <button type="button" class="btn btn-remove" data-action="remove">Sil</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -1051,6 +1191,9 @@ if (typeof document !== 'undefined') {
     const themeToggleBtn = document.getElementById('themeToggleBtn');
     if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
 
+    const privacyToggleBtn = document.getElementById('privacyToggleBtn');
+    if (privacyToggleBtn) privacyToggleBtn.addEventListener('click', togglePrivacyMode);
+
     const openObsModalBtn = document.getElementById('openObsModalBtn');
     if (openObsModalBtn) openObsModalBtn.addEventListener('click', openObsModal);
 
@@ -1062,6 +1205,16 @@ if (typeof document !== 'undefined') {
 
     const closeRegModalBtn = document.getElementById('closeRegModalBtn');
     if (closeRegModalBtn) closeRegModalBtn.addEventListener('click', closeRegModal);
+
+    const addSemesterBtn = document.getElementById('addSemesterBtn');
+    if (addSemesterBtn) addSemesterBtn.addEventListener('click', addNewSemester);
+
+    const parseObsBtn = document.getElementById('parseObsBtn');
+    if (parseObsBtn) parseObsBtn.addEventListener('click', parseOBS);
+
+    document.querySelectorAll('[data-close-modal="obsModal"]').forEach(btn => {
+        btn.addEventListener('click', closeModal);
+    });
 
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', e => {
@@ -1079,7 +1232,45 @@ if (typeof document !== 'undefined') {
         }
     });
 
-    ['vizeRatio', 'finalRatio', 'passGrade', 'condGrade', 'finalThreshold'].forEach(id => {
+    const tbody = document.getElementById('courseTableBody');
+    if (tbody) {
+        tbody.addEventListener('input', e => {
+            const inputEl = e.target;
+            const field = inputEl.getAttribute && inputEl.getAttribute('data-field');
+            if (!field) return;
+            const row = inputEl.closest('tr');
+            if (!row) return;
+            const courseId = Number(row.getAttribute('data-id'));
+            if (!courseId) return;
+
+            if (field === 'credit') validateInput(inputEl, 0, 30);
+            else if (field === 'vize' || field === 'final') validateInput(inputEl, 0, 100);
+
+            updateCourseData(courseId, field, inputEl.value);
+        });
+
+        tbody.addEventListener('blur', e => {
+            const inputEl = e.target;
+            const field = inputEl.getAttribute && inputEl.getAttribute('data-field');
+            if (field !== 'vize' && field !== 'final') return;
+            const row = inputEl.closest('tr');
+            if (!row) return;
+            const courseId = Number(row.getAttribute('data-id'));
+            const course = state.courses.find(c => c.id === courseId);
+            if (course) syncInputMask(inputEl, field, course);
+        }, true);
+
+        tbody.addEventListener('click', e => {
+            const removeBtn = e.target.closest && e.target.closest('[data-action="remove"]');
+            if (!removeBtn) return;
+            const row = removeBtn.closest('tr');
+            if (!row) return;
+            const courseId = Number(row.getAttribute('data-id'));
+            if (courseId) removeCourse(courseId);
+        });
+    }
+
+    ['vizeRatio', 'finalRatio', 'passGrade', 'condGrade', 'finalThreshold', 'privacyThreshold'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', function () {
@@ -1132,6 +1323,10 @@ if (typeof module !== 'undefined' && module.exports) {
         calculateStatus,
         parseOBSText,
         formatNeeded,
-        escapeHtml
+        escapeHtml,
+        isGradeHidden,
+        round2,
+        nextCourseId,
+        sanitizeCourseIds
     };
 }

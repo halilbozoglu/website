@@ -1,8 +1,8 @@
 
 const text = `
-HALİL BOZOĞLU
+ÖRNEK ÖĞRENCİ
 
-Öğr. No: 241202032
+Öğr. No: 999999999
 
     Genel Menü
     İlişik Kesme
@@ -25,7 +25,7 @@ Aktif Dönem Notları
 	
 Dönem Ortalaması: 0
 	Ders Kodu 	Şube No 	Yıl 	Ders Adı 	ECTS 	Sınavlar 	Genel Ortalama 	Harf 	Durum
-	1202301 	0 	2026 	Devre Analizi I 	5 	Vize 44
+	1202301 	0 	2026 	Devre Analizi I 	5 	Vize 55
 `;
 
 const normalized = text.replace(/\s+/g, ' ');
